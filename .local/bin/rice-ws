@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""rice-ws N — кнопка воркспейса N для waybar (custom module, бесконечный вывод JSON).
+Слушает события Hyprland (socket2) и печатает состояние: active / occupied / empty."""
+import json, os, socket, subprocess, sys
+
+N = int(sys.argv[1])
+sig = os.environ["HYPRLAND_INSTANCE_SIGNATURE"]
+rt = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+SOCK = f"{rt}/hypr/{sig}/.socket2.sock"
+
+def hj(cmd):
+    try:
+        return json.loads(subprocess.run(["hyprctl", cmd, "-j"], capture_output=True, text=True).stdout)
+    except Exception:
+        return None
+
+ICONS = {
+    "firefox": "\U000F0239", "kitty": "\U000F018D", "org.telegram.desktop": "\uf2c6",
+    "telegramdesktop": "\uf2c6", "com.obsproject.studio": "\U000F0D5C", "obs": "\U000F0D5C",
+    "org.kde.dolphin": "\U000F024B", "chromium": "\U000F02AF", "google-chrome": "\U000F02AF",
+    "code": "\U000F0A1E", "discord": "\U000F066F", "vesktop": "\U000F066F", "steam": "\U000F04D3",
+    "spotify": "\U000F04C7", "obsidian": "\U000F0B9B", "mpv": "\U000F0381", "pavucontrol": "\U000F057E",
+}
+DEFAULT = "\U000F08C6"
+
+def icons_for():
+    cl = hj("clients") or []
+    out = []
+    for c in cl:
+        if c.get("workspace", {}).get("id") == N:
+            k = (c.get("class") or "").lower()
+            out.append(ICONS.get(k, DEFAULT))
+    return " ".join(out[:4])
+
+last = None
+def emit():
+    global last
+    act = hj("activeworkspace") or {}
+    wss = hj("workspaces") or []
+    if act.get("id") == N:
+        cls = "active"
+    elif any(w.get("id") == N and w.get("windows", 0) > 0 for w in wss):
+        cls = "occupied"
+    else:
+        cls = "empty"
+    ic = icons_for()
+    text = f"{N} {ic}" if ic else str(N)
+    if (cls, text) != last:
+        print(json.dumps({"text": text, "class": cls, "tooltip": f"Workspace {N}"}, ensure_ascii=False), flush=True)
+        last = (cls, text)
+
+emit()
+s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+s.connect(SOCK)
+buf = b""
+while True:
+    data = s.recv(4096)
+    if not data:
+        break
+    buf += data
+    if b"\n" in buf:
+        buf = buf.rsplit(b"\n", 1)[1]
+        emit()

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Погода для waybar (wttr.in, город по IP). Задай город: WEATHER_CITY=Moscow
+w=$(curl -sf -m 8 "https://wttr.in/${WEATHER_CITY}?format=%c|%t|%C" ) || { echo '{"text":"󰖐 --"}'; exit; }
+IFS='|' read -r ic t cond <<< "$w"
+t=${t#+}
+printf '{"text":"%s %s","tooltip":"%s"}\n' "$(echo $ic)" "$t" "$cond"

@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+"""rice-task — своя панель задач для waybar (слоты custom/task0..N).
+
+  rice-task watch N   поток JSON для слота N (waybar exec)
+  rice-task click N   ЛКМ по слоту:
+        окно на текущем столе              -> свернуть
+        окно на другом столе               -> перейти к нему
+        окно свёрнуто                      -> развернуть сюда
+  rice-task close N   закрыть окно слота
+"""
+import json, os, socket, subprocess, sys
+
+MIN_WS = "special:minimized"
+SKIP_CLASSES = {"widget", "lofi-widget"}
+ICONS = {
+    "firefox": "\U000F0239", "kitty": "\U000F018D", "org.telegram.desktop": "",
+    "telegramdesktop": "", "com.obsproject.studio": "\U000F0D5C",
+    "org.kde.dolphin": "\U000F024B", "chromium": "\U000F02AF", "google-chrome": "\U000F02AF",
+    "code": "\U000F0A1E", "discord": "\U000F066F", "vesktop": "\U000F066F", "steam": "\U000F04D3",
+    "spotify": "\U000F04C7", "yandexmusic": "\U000F075A", "obsidian": "\U000F0B9B", "mpv": "\U000F0381",
+    "org.pulseaudio.pavucontrol": "\U000F057E", "happ": "\U000F0582",
+}
+NAMES = {
+    "kitty": "Terminal", "firefox": "Firefox", "org.telegram.desktop": "Telegram",
+    "com.obsproject.studio": "OBS Studio", "org.kde.dolphin": "Files", "yandexmusic": "Yandex Music",
+    "org.pulseaudio.pavucontrol": "Volume",
+}
+DEFAULT_ICON = "\U000F08C6"
+
+
+def hj(cmd):
+    try:
+        return json.loads(subprocess.run(["hyprctl", cmd, "-j"], capture_output=True, text=True).stdout)
+    except Exception:
+        return None
+
+
+def dispatch(lua):
+    subprocess.run(["hyprctl", "dispatch", lua], capture_output=True)
+
+
+def windows():
+    """Окна в стабильном порядке: по номеру стола (свёрнутые в конце), затем по времени открытия."""
+    cl = [c for c in (hj("clients") or [])
+          if c.get("mapped") and c.get("class", "").lower() not in SKIP_CLASSES
+          and (not c["workspace"]["name"].startswith("special:") or c["workspace"]["name"] == MIN_WS)]
+    def key(c):
+        ws = c["workspace"]["id"] if c["workspace"]["name"] != MIN_WS else 10**6
+        return (ws, c.get("stableId") or c["address"])
+    return sorted(cl, key=key)
+
+
+def state():
+    mon = next((m for m in hj("monitors") or [] if m.get("focused")), {})
+    act = hj("activewindow") or {}
+    return mon.get("activeWorkspace", {}).get("id"), act.get("address")
+
+
+def label(c):
+    k = c.get("class", "").lower()
+    name = NAMES.get(k) or c.get("initialTitle") or c.get("class") or "?"
+    if len(name) > 16:
+        name = name[:15] + "…"
+    return f'{ICONS.get(k, DEFAULT_ICON)} {name}'
+
+
+def render(n):
+    ws_now, focused = state()
+    w = windows()
+    if n >= len(w):
+        return {"text": "", "class": "empty"}
+    c = w[n]
+    if c["workspace"]["name"] == MIN_WS:
+        cls = "minimized"
+    elif c["address"] == focused:
+        cls = "focused"
+    elif c["workspace"]["id"] == ws_now:
+        cls = "here"
+    else:
+        cls = "other"
+    return {"text": label(c), "class": cls, "tooltip": f'{c.get("title", "")}\n[стол {c["workspace"]["name"]}]'}
+
+
+def watch(n):
+    last = None
+    def emit():
+        nonlocal last
+        out = json.dumps(render(n), ensure_ascii=False)
+        if out != last:
+            print(out, flush=True)
+            last = out
+    emit()
+    sig = os.environ["HYPRLAND_INSTANCE_SIGNATURE"]
+    rt = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.connect(f"{rt}/hypr/{sig}/.socket2.sock")
+    buf = b""
+    while True:
+        data = s.recv(4096)
+        if not data:
+            break
+        buf += data
+        if b"\n" in buf:
+            buf = buf.rsplit(b"\n", 1)[1]
+            emit()
+
+
+def click(n):
+    w = windows()
+    if n >= len(w):
+        return
+    c = w[n]
+    addr = c["address"]
+    ws_now, focused = state()
+    if c["workspace"]["name"] == MIN_WS:
+        subprocess.run([os.path.expanduser("~/.local/bin/rice-min"), "--restore", addr])
+    elif c["workspace"]["id"] == ws_now:
+        # на текущем столе — сворачиваем сразу, даже если окно не в фокусе
+        subprocess.run([os.path.expanduser("~/.local/bin/rice-min"), addr])
+    else:
+        dispatch(f'hl.dsp.focus({{ window = "address:{addr}" }})')
+
+
+def close(n):
+    w = windows()
+    if n < len(w):
+        dispatch(f'hl.dsp.window.close({{ window = "address:{w[n]["address"]}" }})')
+
+
+if __name__ == "__main__":
+    cmd, n = sys.argv[1], int(sys.argv[2])
+    {"watch": watch, "click": click, "close": close}[cmd](n)

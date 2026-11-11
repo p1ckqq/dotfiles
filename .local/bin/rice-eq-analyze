@@ -1,0 +1,74 @@
+#!/usr/bin/env python3
+"""rice-eq-analyze [секунды] [out.json]
+Слушает то, что играет в наушники (монитор устройства вывода), и считает средний спектр
+музыки по 1/3-октавным полосам + громкость/пики. Звук не сохраняется — только статистика.
+Параллельно записывает треки (playerctl), чтобы знать, что именно анализировали."""
+import json, subprocess, sys, time, threading
+import numpy as np
+
+DUR = float(sys.argv[1]) if len(sys.argv) > 1 else 240
+OUT = sys.argv[2] if len(sys.argv) > 2 else "eq-analysis.json"
+RATE, N = 48000, 8192
+
+sink = subprocess.run(["sh", "-c", "wpctl inspect @DEFAULT_AUDIO_SINK@ | sed -n 's/.*node.name = \"\\(.*\\)\"/\\1/p'"],
+                      capture_output=True, text=True).stdout.strip()
+rec = subprocess.Popen(["pw-record", "--raw", "--target", sink, "-P", "{ stream.capture.sink = true }",
+                        "--rate", str(RATE), "--channels", "1", "--format", "f32", "-"],
+                       stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+
+# 1/3-октавные полосы 25 Гц … 16 кГц
+centers = 1000 * 2.0 ** (np.arange(-16, 13) / 3.0)
+freqs = np.fft.rfftfreq(N, 1 / RATE)
+edges = [(c / 2 ** (1 / 6), c * 2 ** (1 / 6)) for c in centers]
+masks = [(freqs >= lo) & (freqs < hi) for lo, hi in edges]
+win = np.hanning(N).astype(np.float32)
+
+acc = np.zeros(len(centers)); frames = 0; skipped = 0
+rms_list, peak = [], 0.0
+tracks, stop = [], threading.Event()
+
+def watch_tracks():
+    last = None
+    while not stop.is_set():
+        r = subprocess.run(["playerctl", "-p", "%any,!firefox", "metadata", "--format", "{{artist}} — {{title}}"],
+                           capture_output=True, text=True)
+        t = r.stdout.strip()
+        if t and t != last:
+            tracks.append(t); last = t
+        stop.wait(3)
+
+threading.Thread(target=watch_tracks, daemon=True).start()
+t0 = time.time(); buf = b""; need = N * 4
+while time.time() - t0 < DUR:
+    chunk = rec.stdout.read(need - len(buf))
+    if not chunk:
+        break
+    buf += chunk
+    if len(buf) < need:
+        continue
+    x = np.frombuffer(buf, dtype=np.float32); buf = b""
+    r = float(np.sqrt(np.mean(x * x)))
+    if r < 0.003:          # тишина/пауза между треками — пропускаем
+        skipped += 1; continue
+    peak = max(peak, float(np.max(np.abs(x))))
+    rms_list.append(r)
+    spec = np.abs(np.fft.rfft(x * win)) ** 2
+    acc += np.array([spec[m].mean() if m.any() else 0 for m in masks]); frames += 1
+
+stop.set(); rec.terminate()
+if frames == 0:
+    print("Нет звука — включи музыку и запусти снова"); sys.exit(1)
+
+db = 10 * np.log10(acc / frames + 1e-20)
+db -= db[np.argmin(np.abs(centers - 1000))]          # нормировка: 1 кГц = 0 дБ
+rms = np.array(rms_list)
+res = {
+    "seconds": round(frames * N / RATE, 1), "skipped_silence_frames": skipped,
+    "bands_hz": [round(float(c), 1) for c in centers], "level_db_rel_1k": [round(float(v), 2) for v in db],
+    "rms_dbfs": round(float(20 * np.log10(rms.mean())), 2),
+    "peak_dbfs": round(float(20 * np.log10(peak + 1e-9)), 2),
+    "crest_db": round(float(20 * np.log10(peak / rms.mean())), 2),
+    "tracks": tracks,
+}
+json.dump(res, open(OUT, "w"), ensure_ascii=False, indent=2)
+print(json.dumps({k: v for k, v in res.items() if k not in ("bands_hz", "level_db_rel_1k")}, ensure_ascii=False))

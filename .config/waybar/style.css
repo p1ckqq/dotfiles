@@ -1,0 +1,150 @@
+@import "colors.css";
+/* Два бара. Цвета — из обоев (matugen). Старый вариант: style-v1.css / config-v1.jsonc */
+
+* {
+  font-family: "JetBrainsMono Nerd Font", monospace;
+  font-size: 12px;
+  font-weight: 700;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+}
+
+window#waybar {
+  background: alpha(@surface_container_lowest, 0.88);
+  color: @on_surface;
+}
+window#waybar.top    { border-bottom: 1px solid alpha(@outline_variant, 0.6); }
+window#waybar.bottom { border-top: 1px solid alpha(@outline_variant, 0.6); }
+
+tooltip {
+  background: @surface;
+  border: 1px solid @outline;
+  border-radius: 8px;
+}
+
+/* ================= ВЕРХНИЙ БАР: тёмные таблетки ================= */
+.top #cpu, .top #power-profiles-daemon, .top #temperature, .top #memory, .top #disk,
+.top #idle_inhibitor, .top #clock, .top #custom-vpn,
+.top #custom-weather, .top #custom-picker, .top #custom-clip, .top #custom-updates,
+.top #custom-wall, .top #custom-nightlight, .top #custom-record {
+  background: alpha(@surface_container_high, 0.9);
+  color: @tertiary_fixed;
+  padding: 0 12px;
+  margin: 4px 4px;
+  border-radius: 12px;
+}
+.top #cpu { margin-left: 8px; }
+.top #custom-record { margin-right: 8px; }
+
+.top #custom-picker, .top #custom-clip, .top #custom-wall,
+.top #custom-nightlight, .top #custom-record, .top #power-profiles-daemon,
+.top #idle_inhibitor { padding: 0 14px; }
+
+.top #idle_inhibitor.activated { color: @primary; }
+.top #temperature.critical     { color: @error; }
+.top #custom-vpn.on            { color: #8fd18f; }
+.top #custom-vpn.off           { color: alpha(@on_surface, 0.4); }
+.top #custom-nightlight.on     { color: #ffcf6e; }
+.top #custom-record.idle       { color: #e5484d; }
+.top #custom-record.rec        { background: #e5484d; color: #fff; }
+.top #power-profiles-daemon.performance { color: #ffcf6e; }
+.top #power-profiles-daemon.power-saver { color: #8fd18f; }
+
+.top button:hover, .top label:hover { background: alpha(@primary, 0.25); }
+
+/* ================= НИЖНИЙ БАР: светлые таблетки ================= */
+.bottom #custom-launcher {
+  color: @primary;
+  font-size: 15px;
+  padding: 0 14px;
+  margin: 4px 4px 4px 8px;
+  background: alpha(@surface_container_high, 0.9);
+  border-radius: 12px;
+}
+
+/* панель задач */
+#taskbar { margin: 0 4px; }
+#taskbar button {
+  background: linear-gradient(90deg, alpha(@primary, 0.85), alpha(@primary_fixed_dim, 0.7));
+  color: @on_primary;
+  padding: 0 12px;
+  margin: 4px 3px;
+  border-radius: 12px;
+}
+#taskbar button.active {
+  background: linear-gradient(90deg, @primary_fixed, @primary);
+}
+#taskbar button.minimized { opacity: 0.55; }
+#taskbar button:hover { background: @primary_fixed; }
+
+/* воркспейсы — одна общая таблетка */
+#ws {
+  background: alpha(@primary, 0.8);
+  border-radius: 12px;
+  margin: 4px 0;
+  padding: 0 3px;
+}
+#custom-ws1, #custom-ws2, #custom-ws3, #custom-ws4, #custom-ws5 {
+  color: @on_primary;
+  padding: 0 9px;
+  margin: 2px 1px;
+  border-radius: 10px;
+}
+#custom-ws1.empty, #custom-ws2.empty, #custom-ws3.empty, #custom-ws4.empty, #custom-ws5.empty {
+  color: alpha(@on_primary, 0.55);
+}
+#custom-ws1.active, #custom-ws2.active, #custom-ws3.active, #custom-ws4.active, #custom-ws5.active {
+  background: @primary_fixed;
+  color: @on_primary_fixed;
+  padding: 0 12px;
+}
+#custom-ws1:hover, #custom-ws2:hover, #custom-ws3:hover, #custom-ws4:hover, #custom-ws5:hover {
+  background: alpha(@on_primary, 0.15);
+}
+
+/* справа */
+.bottom #tray, .bottom #custom-notify, .bottom #language, .bottom #network, .bottom #bluetooth,
+.bottom #wireplumber, .bottom #custom-power {
+  background: alpha(@surface_container_high, 0.9);
+  color: @primary;
+  padding: 0 12px;
+  margin: 4px 4px;
+  border-radius: 12px;
+}
+.bottom #custom-power { margin-right: 8px; color: @error; padding: 0 14px; }
+.bottom #language { color: #8fd18f; }
+.bottom #wireplumber.muted { color: alpha(@on_surface, 0.45); }
+#tray > .needs-attention { background: @error; }
+
+/* ===== своя панель задач (rice-task) ===== */
+#tasks { margin: 0 4px; }
+#custom-task0, #custom-task1, #custom-task2, #custom-task3, #custom-task4, #custom-task5, #custom-task6, #custom-task7, #custom-task8, #custom-task9, #custom-task10, #custom-task11 {
+  background: linear-gradient(90deg, alpha(@primary, 0.85), alpha(@primary_fixed_dim, 0.7));
+  color: @on_primary;
+  padding: 0 12px;
+  margin: 4px 3px;
+  border-radius: 12px;
+}
+#custom-task0.focused, #custom-task1.focused, #custom-task2.focused, #custom-task3.focused, #custom-task4.focused, #custom-task5.focused, #custom-task6.focused, #custom-task7.focused, #custom-task8.focused, #custom-task9.focused, #custom-task10.focused, #custom-task11.focused { background: linear-gradient(90deg, @primary_fixed, @primary); }
+#custom-task0.other, #custom-task1.other, #custom-task2.other, #custom-task3.other, #custom-task4.other, #custom-task5.other, #custom-task6.other, #custom-task7.other, #custom-task8.other, #custom-task9.other, #custom-task10.other, #custom-task11.other { background: alpha(@primary, 0.45); }
+#custom-task0.minimized, #custom-task1.minimized, #custom-task2.minimized, #custom-task3.minimized, #custom-task4.minimized, #custom-task5.minimized, #custom-task6.minimized, #custom-task7.minimized, #custom-task8.minimized, #custom-task9.minimized, #custom-task10.minimized, #custom-task11.minimized { background: alpha(@surface_container_high, 0.9); color: alpha(@on_surface, 0.6); }
+#custom-task0.empty, #custom-task1.empty, #custom-task2.empty, #custom-task3.empty, #custom-task4.empty, #custom-task5.empty, #custom-task6.empty, #custom-task7.empty, #custom-task8.empty, #custom-task9.empty, #custom-task10.empty, #custom-task11.empty { padding: 0; margin: 0; background: none; }
+#custom-task0:hover, #custom-task1:hover, #custom-task2:hover, #custom-task3:hover, #custom-task4:hover, #custom-task5:hover, #custom-task6:hover, #custom-task7:hover, #custom-task8:hover, #custom-task9:hover, #custom-task10:hover, #custom-task11:hover { background: @primary_fixed; color: @on_primary_fixed; }
+
+/* ===== сейчас играет ===== */
+#media {
+  background: alpha(@surface_container_high, 0.9);
+  border-radius: 12px;
+  margin: 4px 4px;
+  padding: 0 4px;
+}
+#custom-media { color: @tertiary_fixed; padding: 0 8px; }
+#custom-media.paused { color: alpha(@on_surface, 0.6); }
+#custom-mprev, #custom-mnext { color: @primary; padding: 0 6px; font-size: 14px; }
+#custom-mprev:hover, #custom-mnext:hover { color: @primary_fixed; }
+
+/* ===== Wi-Fi / Bluetooth ===== */
+.bottom #network.disconnected, .bottom #network.disabled,
+.bottom #bluetooth.off, .bottom #bluetooth.disabled { color: alpha(@on_surface, 0.4); }
+.bottom #bluetooth.connected { color: @tertiary; }

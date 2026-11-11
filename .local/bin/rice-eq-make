@@ -1,0 +1,73 @@
+#!/usr/bin/env python3
+"""rice-eq-make <analysis.json> [имя профиля]
+Строит профиль EasyEffects (10 полос + лимитер) по замеру rice-eq-analyze.
+
+Идея: сравнить средний спектр музыки с «ровным» эталоном (розовый шум, −3 дБ/октаву
+по плотности), наполовину скомпенсировать отклонения и добавить мягкую
+«наушниковую» кривую. Подъёмы компенсируются входным усилением, сверху — лимитер."""
+import json, math, os, sys
+
+src = sys.argv[1]
+name = sys.argv[2] if len(sys.argv) > 2 else "Мне нравится"
+a = json.load(open(src))
+F = a["bands_hz"]; L = a["level_db_rel_1k"]
+
+def measured(f):
+    """Среднее по 1/3-октавам в окне ±1/2 октавы вокруг f (сглаживание)."""
+    vals = [l for fc, l in zip(F, L) if abs(math.log2(fc / f)) <= 0.5]
+    return sum(vals) / len(vals)
+
+def pink(f):            # плотность розового шума относительно 1 кГц
+    return -3.0 * math.log2(f / 1000)
+
+# мягкий «наушниковый» вкус: немного саба, чуть меньше бубнения, капля воздуха
+PREF = {32: 2.5, 64: 2.0, 125: 0.5, 250: -0.5, 500: -0.5, 1000: 0, 2000: 0.5, 4000: 0.5, 8000: 1.0, 16000: 1.5}
+CENTERS = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000]
+STRENGTH, LIMIT = 0.5, 6.0
+BASS_STRENGTH = 0.25     # бас в trap/phonk — часть звука: почти не режем
+EXTRA_BASS = float(os.environ.get("EXTRA_BASS", "0"))   # доп. подъём саба для «бас»-версии
+
+gains = {}
+for f in CENTERS:
+    dev = measured(f) - pink(f)                 # + = избыток, − = провал
+    if f >= 16000 and dev < -12:                # верх отрезан в самих файлах — не задираем
+        dev = -12
+    k = BASS_STRENGTH if f <= 125 else STRENGTH
+    g = -k * dev + PREF[f]
+    if f == 32: g += EXTRA_BASS
+    if f == 64: g += EXTRA_BASS * 0.6
+    gains[f] = max(-LIMIT, min(LIMIT, g))
+
+# центрируем кривую, чтобы средняя громкость почти не менялась
+mean = sum(gains.values()) / len(gains)
+gains = {f: round(g - mean, 1) for f, g in gains.items()}
+preamp = round(-max(0.0, max(gains.values())) - 1.0, 1)
+
+def band(f, g):
+    return {"frequency": float(f), "gain": g, "mode": "RLC (BT)", "mute": False,
+            "q": 1.504760237537245, "slope": "x1", "solo": False,
+            "type": "Lo-shelf" if f == 32 else ("Hi-shelf" if f == 16000 else "Bell")}
+
+side = {f"band{i}": band(f, gains[f]) for i, f in enumerate(CENTERS)}
+preset = {"output": {
+    "blocklist": [],
+    "plugins_order": ["equalizer#0", "limiter#0"],
+    "equalizer#0": {"bypass": False, "input-gain": preamp, "output-gain": 0.0, "mode": "IIR",
+                    "num-bands": 10, "split-channels": False, "left": side, "right": json.loads(json.dumps(side))},
+    "limiter#0": {"bypass": False, "alr": False, "alr-attack": 5.0, "alr-knee": 0.0, "alr-release": 50.0,
+                  "attack": 5.0, "dithering": "None", "gain-boost": False, "input-gain": 0.0, "lookahead": 5.0,
+                  "mode": "Herm Thin", "output-gain": 0.0, "oversampling": "Half x2(2L)", "release": 20.0,
+                  "sidechain-preamp": 0.0, "stereo-link": 100.0, "threshold": -1.0},
+}}
+
+out_dir = os.path.expanduser("~/.local/share/easyeffects/output")
+os.makedirs(out_dir, exist_ok=True)
+path = os.path.join(out_dir, f"{name}.json")
+json.dump(preset, open(path, "w"), ensure_ascii=False, indent=4)
+
+print(f"профиль: {path}")
+print(f"вход: {preamp} дБ, лимитер: −1 дБ")
+for f in CENTERS:
+    lab = f"{f//1000}k" if f >= 1000 else str(f)
+    g = gains[f]
+    print(f"  {lab:>4} Гц  {g:+5.1f} дБ  {'█' * int(abs(g) * 2):<12} {'подъём' if g > 0.4 else 'срез' if g < -0.4 else ''}")

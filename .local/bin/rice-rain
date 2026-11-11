@@ -1,0 +1,51 @@
+#!/usr/bin/env python3
+"""rice-rain — падающие символы в терминале (виджет рабочего стола). q / Ctrl+C — выход."""
+import curses, random, time
+
+GLYPHS = "$&?!#*=<>/()+%:;[]{}~^"
+
+def main(scr):
+    curses.curs_set(0)
+    curses.use_default_colors()
+    scr.nodelay(True)
+    curses.init_pair(1, 15, -1)   # голова — ярко-белая
+    curses.init_pair(2, 7, -1)    # хвост — серый
+    curses.init_pair(3, 8, -1)    # хвост — тёмный
+    drops = {}
+    while True:
+        h, w = scr.getmaxyx()
+        # новые капли
+        for x in range(0, w, 2):
+            if x not in drops and random.random() < 0.02:
+                drops[x] = [0.0, random.uniform(0.25, 0.9), random.randint(5, max(6, h // 2))]
+        scr.erase()
+        for x, d in list(drops.items()):
+            y, v, ln = d
+            for k in range(ln):
+                yy = int(y) - k
+                if 0 <= yy < h and x < w - 1:
+                    attr = curses.color_pair(1) | curses.A_BOLD if k == 0 else \
+                           curses.color_pair(2) if k < ln // 2 else curses.color_pair(3)
+                    try:
+                        scr.addstr(yy, x, random.choice(GLYPHS) if k == 0 or random.random() < 0.08
+                                   else scr_cache.get((x, yy), random.choice(GLYPHS)), attr)
+                    except curses.error:
+                        pass
+                    if k == 0:
+                        scr_cache[(x, yy)] = random.choice(GLYPHS)
+            d[0] += v
+            if int(d[0]) - ln > h:
+                del drops[x]
+        scr.refresh()
+        try:
+            if scr.getkey() in ("q", "Q"):
+                return
+        except curses.error:
+            pass
+        time.sleep(0.05)
+
+scr_cache = {}
+try:
+    curses.wrapper(main)
+except KeyboardInterrupt:
+    pass

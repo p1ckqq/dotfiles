@@ -1,0 +1,115 @@
+{
+  "$schema": "/etc/xdg/swaync/configSchema.json",
+  "positionX": "right",
+  "positionY": "top",
+  "layer": "overlay",
+  "control-center-layer": "top",
+  "layer-shell": true,
+  "cssPriority": "user",
+  "control-center-margin-top": 8,
+  "control-center-margin-bottom": 8,
+  "control-center-margin-right": 8,
+  "control-center-width": 420,
+  "control-center-height": 900,
+  "notification-window-width": 400,
+  "notification-icon-size": 48,
+  "notification-body-image-height": 140,
+  "notification-body-image-width": 260,
+  "timeout": 6,
+  "timeout-low": 3,
+  "timeout-critical": 0,
+  "fit-to-screen": true,
+  "keyboard-shortcuts": true,
+  "image-visibility": "when-available",
+  "transition-time": 200,
+  "hide-on-clear": false,
+  "hide-on-action": true,
+  "widgets": [
+    "title",
+    "mpris",
+    "buttons-grid",
+    "volume",
+    "dnd",
+    "notifications"
+  ],
+  "widget-config": {
+    "title": {
+      "text": "Уведомления",
+      "clear-all-button": true,
+      "button-text": "очистить"
+    },
+    "dnd": {
+      "text": "Не беспокоить"
+    },
+    "mpris": {
+      "image-size": 72,
+      "image-radius": 10,
+      "blacklist": [
+        "playerctld"
+      ]
+    },
+    "volume": {
+      "label": "󰕾",
+      "show-per-app": false
+    },
+    "buttons-grid": {
+      "buttons-per-row": 4,
+      "actions": [
+        {
+          "label": "󰋋\nLo-fi",
+          "type": "toggle",
+          "command": "sh -c 'swaync-client -cp; /home/p1ckq/.local/bin/rice-lofi toggle'",
+          "update-command": "/home/p1ckq/.local/bin/rice-lofi status"
+        },
+        {
+          "label": "󰖩\nWi-Fi",
+          "type": "toggle",
+          "command": "/home/p1ckq/.local/bin/rice-qs wifi-toggle",
+          "update-command": "/home/p1ckq/.local/bin/rice-qs wifi-status"
+        },
+        {
+          "label": "󰖂\nVPN",
+          "type": "toggle",
+          "command": "sh -c 'swaync-client -cp; /home/p1ckq/.local/bin/rice-happ'",
+          "update-command": "/home/p1ckq/.local/bin/rice-happ status"
+        },
+        {
+          "label": "󰂯\nBluetooth",
+          "type": "toggle",
+          "command": "/home/p1ckq/.local/bin/rice-qs bt-toggle",
+          "update-command": "/home/p1ckq/.local/bin/rice-qs bt-status"
+        },
+        {
+          "label": "󰖔\nНочь",
+          "type": "toggle",
+          "command": "/home/p1ckq/.local/bin/rice-nightlight",
+          "update-command": "/home/p1ckq/.local/bin/rice-qs night-status"
+        },
+        {
+          "label": "󰅶\nНе спать",
+          "type": "toggle",
+          "command": "/home/p1ckq/.local/bin/rice-qs idle-toggle",
+          "update-command": "/home/p1ckq/.local/bin/rice-qs idle-status"
+        },
+        {
+          "label": "󰍬\nМикрофон",
+          "type": "toggle",
+          "command": "/home/p1ckq/.local/bin/rice-qs mic-toggle",
+          "update-command": "/home/p1ckq/.local/bin/rice-qs mic-status"
+        },
+        {
+          "label": "󰑹\nСкриншот",
+          "command": "sh -c 'swaync-client -cp; sleep 0.4; grim -g \"$(slurp)\" - | wl-copy'"
+        },
+        {
+          "label": "󰌾\nБлок",
+          "command": "sh -c 'swaync-client -cp; hyprlock'"
+        },
+        {
+          "label": "󰐥\nПитание",
+          "command": "sh -c 'swaync-client -cp; /home/p1ckq/.local/bin/rice-power'"
+        }
+      ]
+    }
+  }
+}

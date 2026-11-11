@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+"""rice-widgets — виджеты на текущем столе сеткой 2×2:
+        часы      | fastfetch
+        cava      | падающие символы
+  rice-widgets            открыть (перезапустить) на текущем столе
+  rice-widgets --kill     закрыть все
+  rice-widgets --refresh  перезапустить, только если уже открыты (после смены обоев)
+Цвета — из палитры системы (~/.config/hypr/colors.lua, её пишет matugen)."""
+import json, os, subprocess, sys, time
+
+HOME = os.path.expanduser("~")
+CLASS = "widget"
+
+
+def hj(cmd):
+    try:
+        return json.loads(subprocess.run(["hyprctl", cmd, "-j"], capture_output=True, text=True).stdout)
+    except Exception:
+        return []
+
+
+def dispatch(lua):
+    subprocess.run(["hyprctl", "dispatch", lua], capture_output=True)
+
+
+def mine():
+    return [c for c in hj("clients") if c.get("class") == CLASS]
+
+
+def kill_all():
+    for c in mine():
+        dispatch(f'hl.dsp.window.close({{ window = "address:{c["address"]}" }})')
+    for _ in range(20):
+        if not mine(): break
+        time.sleep(0.15)
+
+
+def colors():
+    C = {}
+    try:
+        for line in open(f"{HOME}/.config/hypr/colors.lua"):
+            if "=" in line and '"' in line:
+                k, v = line.split("=", 1); C[k.strip()] = "#" + v.split('"')[1]
+    except Exception:
+        pass
+    return C
+
+
+def launch(cmd, extra=()):
+    C = colors()
+    args = ["kitty", "--class", CLASS,
+            "-o", f"background={C.get('surface', '#111318')}", "-o", "background_opacity=0.25",
+            "-o", f"foreground={C.get('primary', '#a2c9ff')}", "-o", f"color15={C.get('primary', '#a2c9ff')}",
+            "-o", f"color7={C.get('tertiary', '#f1b0fd')}", "-o", f"color8={C.get('tertiary', '#f1b0fd')}",
+            "-o", "window_padding_width=8", "-o", "confirm_os_window_close=0", *extra, *cmd]
+    subprocess.Popen(args, start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def add(cmd, next_to=None, side=None, extra=()):
+    if next_to:
+        dispatch(f'hl.dsp.focus({{ window = "address:{next_to["address"]}" }})'); time.sleep(0.15)
+    if side:
+        dispatch(f'hl.dsp.layout("preselect {side}")'); time.sleep(0.1)
+    before = {c["address"] for c in hj("clients")}
+    launch(cmd, extra)
+    t = time.time()
+    while time.time() - t < 10:
+        new = [c for c in mine() if c["address"] not in before]
+        if new:
+            time.sleep(0.25); return new[0]
+        time.sleep(0.2)
+    return None
+
+
+def open_grid():
+    kill_all()
+    clock = add([f"{HOME}/.local/bin/rice-clock"])
+    ff = add(["bash", "-c", "while :; do clear; fastfetch; sleep 300; done"], clock, "r",
+             extra=("-o", "font_size=8.5", "-o", "background_opacity=0.45",
+                    "-o", "font_family=family='JetBrainsMono Nerd Font' style=Bold",
+                    "-o", "text_composition_strategy=1.0 60"))           # справа от часов, чёткий жирный текст
+    add(["cava"], clock, "d")                                           # под часами
+    add([f"{HOME}/.local/bin/rice-rain"], ff, "d")                      # под fastfetch
+
+
+arg = sys.argv[1] if len(sys.argv) > 1 else ""
+if arg == "--kill":
+    kill_all()
+elif arg == "--refresh":
+    w = mine()
+    if w:   # пересобрать на том столе, где виджеты стоят, и вернуться обратно
+        home = w[0]["workspace"]["id"]
+        cur = next((m["activeWorkspace"]["id"] for m in hj("monitors") if m.get("focused")), home)
+        if home != cur: dispatch(f"hl.dsp.focus({{ workspace = {home} }})"); time.sleep(0.2)
+        open_grid()
+        if home != cur: dispatch(f"hl.dsp.focus({{ workspace = {cur} }})")
+else:
+    open_grid()

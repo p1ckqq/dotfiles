@@ -1,0 +1,63 @@
+[config]
+
+[templates.hypr]
+input_path = '~/.config/rice/templates/hypr-colors.lua'
+output_path = '~/.config/hypr/colors.lua'
+post_hook = 'hyprctl reload >/dev/null'
+
+[templates.hyprlock]
+input_path = '~/.config/rice/templates/hyprlock-colors.conf'
+output_path = '~/.config/hypr/hyprlock-colors.conf'
+
+[templates.waybar]
+input_path = '~/.config/rice/templates/colors.css'
+output_path = '~/.config/waybar/colors.css'
+post_hook = 'pkill -SIGUSR2 waybar'
+
+[templates.wofi]
+input_path = '~/.config/rice/templates/wofi.css'
+output_path = '~/.config/wofi/style.css'
+
+[templates.kitty]
+input_path = '~/.config/rice/templates/kitty-colors.conf'
+output_path = '~/.config/kitty/colors.conf'
+post_hook = 'pkill -SIGUSR1 kitty'
+
+[templates.cava]
+input_path = '~/.config/rice/templates/cava'
+output_path = '~/.config/cava/config'
+post_hook = 'pkill -USR2 cava'
+
+[templates.fastfetch]
+input_path = '~/.config/rice/templates/fastfetch.jsonc'
+output_path = '~/.config/fastfetch/config.jsonc'
+
+[templates.gtk3]
+input_path = '~/.config/rice/templates/gtk-colors.css'
+output_path = '~/.config/gtk-3.0/colors.css'
+
+[templates.gtk4]
+input_path = '~/.config/rice/templates/gtk-colors.css'
+output_path = '~/.config/gtk-4.0/colors.css'
+
+[templates.qt6ct]
+input_path = '~/.config/rice/templates/qt6ct-colors.conf'
+output_path = '~/.config/qt6ct/colors/matugen.conf'
+
+[templates.kdeglobals]
+input_path = '~/.config/rice/templates/kdeglobals'
+output_path = '~/.config/kdeglobals'
+
+[templates.swaync]
+input_path = '~/.config/rice/templates/swaync.css'
+output_path = '~/.config/swaync/style.css'
+post_hook = 'swaync-client -rs'
+
+[templates.pywalfox]
+input_path = '~/.config/rice/templates/pywalfox.json'
+output_path = '~/.cache/wal/colors.json'
+post_hook = '~/.local/bin/pywalfox update'
+
+[templates.kde-colorscheme]
+input_path = '~/.config/rice/templates/kdeglobals'
+output_path = '~/.local/share/color-schemes/Matugen.colors'

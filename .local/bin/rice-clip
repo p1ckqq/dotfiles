@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+cliphist list | wofi --dmenu --prompt "" --cache-file /dev/null | cliphist decode | wl-copy

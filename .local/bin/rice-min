@@ -1,0 +1,110 @@
+#!/usr/bin/env python3
+"""rice-min — сворачивание окон в Hyprland (скрытый стол special:minimized).
+
+  rice-min            свернуть активное окно
+  rice-min ADDR       свернуть окно по адресу (0x...)
+  rice-min --restore ADDR   вернуть окно на текущий стол
+  rice-min --daemon   фоновый обработчик:
+      * программа/панель задач просит «свернуть» (событие minimized) -> сворачивает
+"""
+import json, os, socket, subprocess, sys, time
+
+WS = "special:minimized"
+STAMP = os.path.expanduser("~/.cache/rice/min-stamp")
+
+def hj(cmd):
+    try:
+        return json.loads(subprocess.run(["hyprctl", cmd, "-j"], capture_output=True, text=True).stdout)
+    except Exception:
+        return None
+
+def dispatch(lua):
+    subprocess.run(["hyprctl", "dispatch", lua], capture_output=True)
+
+def client(addr):
+    for c in hj("clients") or []:
+        if c.get("address") == addr:
+            return c
+    return None
+
+def minimized_shown():
+    """Скрытый стол со свёрнутыми окнами сейчас открыт на каком-то мониторе
+    (так бывает, когда окно активировали из панели задач)."""
+    return any(m.get("specialWorkspace", {}).get("name") == WS for m in hj("monitors") or [])
+
+def minimize(addr=None):
+    if addr is None:
+        a = hj("activewindow") or {}
+        addr = a.get("address")
+        if not addr:
+            return
+    os.makedirs(os.path.dirname(STAMP), exist_ok=True)
+    open(STAMP, "w").write(f"{time.time()} {addr}")
+    mon = next((m for m in hj("monitors") or [] if m.get("focused")), {})
+    ws_now = mon.get("activeWorkspace", {}).get("id")
+    dispatch(f'hl.dsp.window.move({{ workspace = "{WS}", silent = true, window = "address:{addr}" }})')
+    # Hyprland мог открыть стол свёрнутых, чтобы сфокусировать там окно — прячем его
+    if minimized_shown():
+        dispatch('hl.dsp.workspace.toggle_special("minimized")')
+    # фокус — на последнее использованное окно ТЕКУЩЕГО стола (не на свёрнутое)
+    rest = [c for c in hj("clients") or []
+            if c["workspace"].get("id") == ws_now and c["address"] != addr and c.get("class") != "widget"]
+    if rest:
+        nxt = min(rest, key=lambda c: c.get("focusHistoryID", 10**6))
+        dispatch(f'hl.dsp.focus({{ window = "address:{nxt["address"]}" }})')
+
+def just_minimized(addr):
+    try:
+        t, a = open(STAMP).read().split()
+        return a == addr and time.time() - float(t) < 0.8
+    except Exception:
+        return False
+
+def restore(addr):
+    mon = next((m for m in hj("monitors") or [] if m.get("focused")), None)
+    if not mon:
+        return
+    target = mon["activeWorkspace"]["id"]
+    # спрятать скрытый стол, если он сейчас показан
+    if mon.get("specialWorkspace", {}).get("name") == WS:
+        dispatch(f'hl.dsp.workspace.toggle_special("minimized")')
+    dispatch(f'hl.dsp.window.move({{ workspace = {target}, window = "address:{addr}" }})')
+    dispatch(f'hl.dsp.focus({{ window = "address:{addr}" }})')
+
+def daemon():
+    sig = os.environ["HYPRLAND_INSTANCE_SIGNATURE"]
+    rt = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.connect(f"{rt}/hypr/{sig}/.socket2.sock")
+    buf = b""
+    while True:
+        data = s.recv(4096)
+        if not data:
+            break
+        buf += data
+        *lines, buf = buf.split(b"\n")
+        for raw in lines:
+            line = raw.decode(errors="replace")
+            ev, _, arg = line.partition(">>")
+            if ev == "minimized":
+                addr, _, state = arg.partition(",")
+                addr = addr if addr.startswith("0x") else "0x" + addr
+                c = client(addr)
+                if state == "1":
+                    if c and c["workspace"]["name"] == WS:
+                        restore(addr)          # повторный клик -> развернуть
+                    else:
+                        minimize(addr)
+
+def main():
+    a = sys.argv[1:]
+    if not a:
+        minimize()
+    elif a[0] == "--daemon":
+        daemon()
+    elif a[0] == "--restore" and len(a) > 1:
+        restore(a[1])
+    else:
+        minimize(a[0])
+
+main()

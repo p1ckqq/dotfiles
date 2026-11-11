@@ -1,0 +1,359 @@
+#!/usr/bin/env python3
+"""rice-lofi — режим «lo-fi»: на экране только музыка, эквалайзер, часы и «дождь».
+
+  rice-lofi on | off | toggle | status
+
+Включение:
+  * окна программ на обычных столах уходят на скрытый стол special:lofi;
+  * их процессы замораживаются (SIGSTOP) — не тратят CPU и не шлют уведомлений,
+    но всё открытое (вкладки, переписки) остаётся в памяти;
+  * НЕ замораживаются: терминалы, Happ/VPN, системные службы, а также программы,
+    которые прямо сейчас играют звук (войс в Discord, видео в браузере);
+  * на столе 10 собирается сцена: Яндекс Музыка, EasyEffects, часы, падающие символы.
+Выключение: всё размораживается и возвращается на свои столы.
+Бары, уведомления, обои, zapret, VPN — не трогаются никогда."""
+import json, os, signal, subprocess, sys, time
+
+HOME = os.path.expanduser("~")
+STATE = f"{HOME}/.cache/rice/lofi.json"
+LOFI_WS = 10
+STASH = "special:lofi"
+KEEP_CLASSES = {"widget", "lofi-widget"}           # не прячем (Яндекс Музыка прячется, но не морозится)
+NO_FREEZE = {  # имена процессов (comm), которые никогда не замораживаем
+    "kitty", "fish", "bash", "zsh", "Happ", "happd", "xray", "easyeffects", "yandexmusic",
+    "Hyprland", "waybar", "swaync", "mpvpaper", "awww-daemon", "pipewire", "pipewire-pulse",
+    "wireplumber", "hyprpolkitagent", "xdg-desktop-por", "nfqws", "claude", "node",
+}
+
+
+def hj(cmd):
+    try:
+        return json.loads(subprocess.run(["hyprctl", cmd, "-j"], capture_output=True, text=True).stdout)
+    except Exception:
+        return []
+
+
+def dispatch(lua):
+    subprocess.run(["hyprctl", "dispatch", lua], capture_output=True)
+
+
+def notify(body):
+    subprocess.Popen(["notify-send", "-a", "Lo-fi", "-i", "audio-headphones", "Lo-fi", body])
+
+
+def comm(pid):
+    try:
+        return open(f"/proc/{pid}/comm").read().strip()
+    except Exception:
+        return ""
+
+
+def tree(pid):
+    """pid и все его потомки."""
+    kids = {}
+    for d in os.listdir("/proc"):
+        if d.isdigit():
+            try:
+                ppid = int(open(f"/proc/{d}/stat").read().rsplit(")", 1)[1].split()[1])
+                kids.setdefault(ppid, []).append(int(d))
+            except Exception:
+                pass
+    out, stack = [], [pid]
+    while stack:
+        p = stack.pop(); out.append(p); stack += kids.get(p, [])
+    return out
+
+
+def audio_pids():
+    """PID программ, у которых сейчас есть звуковой поток (войс, видео, музыка)."""
+    pids = set()
+    try:
+        for o in json.loads(subprocess.run(["pw-dump"], capture_output=True, text=True).stdout):
+            props = (o.get("info") or {}).get("props") or {}
+            if props.get("media.class", "").startswith("Stream/") and props.get("application.process.id"):
+                state = (o.get("info") or {}).get("state")
+                if state in ("running", None):
+                    pids.add(int(props["application.process.id"]))
+    except Exception:
+        pass
+    return pids
+
+
+def hide_stash():
+    for m in hj("monitors"):
+        if m.get("specialWorkspace", {}).get("name") == STASH:
+            dispatch('hl.dsp.workspace.toggle_special("lofi")')
+
+
+def to_scene(c):
+    if c and c["workspace"]["id"] != LOFI_WS:
+        dispatch(f'hl.dsp.window.move({{ workspace = {LOFI_WS}, window = "address:{c["address"]}" }})')
+    hide_stash()
+
+
+def wait_window(pred, timeout=25):
+    t = time.time()
+    while time.time() - t < timeout:
+        for c in hj("clients"):
+            if pred(c):
+                return c
+        time.sleep(0.3)
+    return None
+
+
+def launch_widget(script):
+    """script — имя скрипта в ~/.local/bin или системная команда (cava)."""
+    C = {}
+    try:
+        for line in open(f"{HOME}/.config/hypr/colors.lua"):
+            if "=" in line and '"' in line:
+                k, v = line.split("=", 1); C[k.strip()] = "#" + v.split('"')[1]
+    except Exception:
+        pass
+    args = ["kitty", "--class", "lofi-widget",
+            "-o", f"background={C.get('surface', '#111318')}", "-o", "background_opacity=0.55",
+            "-o", f"foreground={C.get('primary', '#a2c9ff')}", "-o", f"color15={C.get('primary', '#a2c9ff')}",
+            "-o", f"color7={C.get('tertiary', '#f1b0fd')}", "-o", f"color8={C.get('tertiary', '#f1b0fd')}",
+            "-o", "window_padding_width=10", "-o", "confirm_os_window_close=0",
+            script if script == "cava" else f"{HOME}/.local/bin/{script}"]
+    subprocess.Popen(args, start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def best_color(C, region):
+    """Из цветов темы выбрать самый контрастный к обоям в области region=(x,y,w,h)."""
+    src = f"{HOME}/.cache/rice/frame.png"
+    try:
+        cur = open(f"{HOME}/.cache/rice/current_wall").read().strip()
+        if not cur.lower().endswith((".mp4", ".webm", ".mkv")):
+            src = cur
+    except Exception:
+        pass
+    x, y, w, h = region
+    try:
+        out = subprocess.run(["magick", src + "[0]", "-resize", "2560x1080!", "-crop", f"{w}x{h}+{x}+{y}", "+repage",
+                              "-resize", "1x1!", "-format", "%[fx:int(255*r)] %[fx:int(255*g)] %[fx:int(255*b)]", "info:"],
+                             capture_output=True, text=True, timeout=10).stdout.split()
+        bg = tuple(int(v) for v in out)
+    except Exception:
+        return C.get("primary", "#a2c9ff"), C.get("tertiary", "#f1b0fd")
+    def lum(rgb):
+        f = lambda c: c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4
+        r, g, b = (f(v / 255) for v in rgb); return 0.2126 * r + 0.7152 * g + 0.0722 * b
+    def con(hx):
+        a = tuple(int(hx[i:i + 2], 16) for i in (1, 3, 5)); la, lb = sorted([lum(a), lum(bg)], reverse=True)
+        return (la + 0.05) / (lb + 0.05)
+    cands = [k for k in ("primary_container", "tertiary_container", "inverse_primary", "primary",
+                         "primary_fixed", "tertiary", "tertiary_fixed", "on_primary_container") if k in C]
+    ranked = sorted(cands, key=lambda k: -con(C[k]))
+    return C[ranked[0]], C[ranked[1] if len(ranked) > 1 else ranked[0]]
+
+
+def on():
+    if os.path.exists(STATE):
+        return notify("уже включён")
+    mon = next((m for m in hj("monitors") if m.get("focused")), {})
+    prev_ws = mon.get("activeWorkspace", {}).get("id", 1)
+    playing = audio_pids()
+    hidden, frozen, skipped = [], [], []
+
+    for c in hj("clients"):
+        ws = c["workspace"]["name"]
+        cls = c.get("class", "").lower()
+        if ws.startswith("special:") or cls in KEEP_CLASSES:
+            continue
+        hidden.append({"address": c["address"], "ws": c["workspace"]["id"], "class": c.get("class", "")})
+        dispatch(f'hl.dsp.window.move({{ workspace = "{STASH}", silent = true, window = "address:{c["address"]}" }})')
+        pid = c["pid"]
+        if comm(pid) in NO_FREEZE:
+            continue
+        procs = tree(pid)
+        if playing & set(procs):
+            skipped.append(c.get("class", "")); continue
+        for p in procs:
+            if comm(p) not in NO_FREEZE:
+                try:
+                    os.kill(p, signal.SIGSTOP); frozen.append(p)
+                except Exception:
+                    pass
+
+    # сцена на столе 10 (тайник прячем, иначе новые окна откроются в нём)
+    hide_stash()
+    dispatch(f"hl.dsp.focus({{ workspace = {LOFI_WS} }})")
+    hide_stash()
+    # Яндекс Музыка: если не запущена — запускаем и сразу прячем (играть можно из бара / Super+N)
+    launched_ym, moved_ym = False, None
+    if not any(c.get("class", "").lower() == "yandexmusic" for c in hj("clients")):
+        subprocess.Popen(["yandex-music"], start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        launched_ym = True
+        ym = wait_window(lambda c: c.get("class", "").lower() == "yandexmusic")
+        if ym:
+            hidden.append({"address": ym["address"], "ws": prev_ws, "class": ym.get("class", "")})
+            dispatch(f'hl.dsp.window.move({{ workspace = "{STASH}", silent = true, window = "address:{ym["address"]}" }})')
+    hide_stash()
+
+    # прозрачные панели прямо на обоях: cava снизу, часы справа
+    mon = next((m for m in hj("monitors") if m.get("focused")), {})
+    W = mon.get("width", 2560)
+    common = ["kitty", "+kitten", "panel", "--edge=bottom", "--layer=bottom", "--exclusive-zone=0",
+              "--override-exclusive-zone", "--class", "lofi-panel",
+              "-o", "background_opacity=0", "-o", "window_padding_width=0", "-o", "cursor_trail=0"]
+    C = {}
+    try:
+        for line in open(f"{HOME}/.config/hypr/colors.lua"):
+            if "=" in line and '"' in line:
+                k, v = line.split("=", 1); C[k.strip()] = "#" + v.split('"')[1]
+    except Exception:
+        pass
+    tint = ["-o", f"foreground={C.get('primary', '#a2c9ff')}", "-o", f"color15={C.get('primary', '#a2c9ff')}",
+            "-o", f"color7={C.get('tertiary', '#f1b0fd')}"]
+    W_ = mon.get("width", 2560); H_ = mon.get("height", 1080)
+    c_main, c_alt = best_color(C, (W_ // 2 + 20, H_ // 2 - 80, W_ // 2 - 60, 160))   # область под часами (центр)
+    clock_tint = ["-o", f"foreground={c_main}", "-o", f"color15={c_main}", "-o", f"color7={c_alt}"]
+    # раскладка: cava на всю ширину сразу над нижним баром; над ней — текст (левая половина) и часы (правая)
+    bar_gap, cava_lines = 3, 6          # отступ поверх зоны нижнего бара (Hyprland сам прибавляет его высоту)
+    H = mon.get("height", 1080)
+    BAR = 34                                        # зона нижнего бара — Hyprland прибавляет её к отступу сам
+    def centered(panel_h):                          # отступ снизу, чтобы середина панели была на середине экрана
+        return max(0, H // 2 - panel_h // 2 - BAR)
+    half = W // 2
+    panels = [
+        subprocess.Popen(common + [f"--margin-bottom={bar_gap}", f"--lines={cava_lines}",
+                                   "--margin-left=12", "--margin-right=12", "cava"],
+                         start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).pid,
+        subprocess.Popen(common + tint + [f"--margin-bottom={centered(146)}", "--lines=5", "-o", "font_size=16",
+                                          "--margin-left=40", f"--margin-right={half + 20}",
+                                          f"{HOME}/.local/bin/rice-lyrics"],
+                         start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).pid,
+        subprocess.Popen(common + clock_tint + [f"--margin-bottom={centered(153)}", "--lines=8",
+                                          f"--margin-left={half + 20}", "--margin-right=40",
+                                          f"{HOME}/.local/bin/rice-clock"],
+                         start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).pid,
+    ]
+    ee = None
+
+    json.dump({"prev_ws": prev_ws, "hidden": hidden, "frozen": frozen, "moved_ym": moved_ym, "panels": panels,
+               "launched_ym": launched_ym, "ee": ee["address"] if ee else None},
+              open(STATE, "w"))
+    gp = subprocess.Popen([sys.executable, os.path.abspath(__file__), "guard"], start_new_session=True,
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).pid
+    st = json.load(open(STATE)); st["guard"] = gp; json.dump(st, open(STATE, "w"))
+    subprocess.run(["pkill", "-RTMIN+11", "waybar"])
+    msg = f"спрятано окон: {len(hidden)}, заморожено процессов: {len(frozen)}"
+    if skipped:
+        msg += f"\nне заморожены (играют звук): {', '.join(sorted(set(skipped)))}"
+    notify(msg)
+
+
+def off():
+    if not os.path.exists(STATE):
+        return notify("и так выключен")
+    st = json.load(open(STATE))
+    if st.get("guard"):
+        try: os.kill(st["guard"], signal.SIGTERM)
+        except Exception: pass
+    for p in st.get("frozen", []):
+        try:
+            os.kill(p, signal.SIGCONT)
+        except Exception:
+            pass
+    for pid in st.get("panels", []):          # прозрачные панели на обоях
+        try:
+            os.killpg(pid, signal.SIGTERM)
+        except Exception:
+            try: os.kill(pid, signal.SIGTERM)
+            except Exception: pass
+    # закрыть сцену: виджеты и окно EasyEffects (служба EasyEffects продолжает работать)
+    for c in hj("clients"):
+        if c.get("class") == "lofi-widget" or (st.get("ee") and c["address"] == st["ee"]):
+            dispatch(f'hl.dsp.window.close({{ window = "address:{c["address"]}" }})')
+    if st.get("moved_ym"):
+        dispatch(f'hl.dsp.window.move({{ workspace = {st["moved_ym"]["ws"]}, silent = true, window = "address:{st["moved_ym"]["address"]}" }})')
+    alive = {c["address"] for c in hj("clients")}
+    for w in st.get("hidden", []):
+        if w["address"] in alive:
+            dispatch(f'hl.dsp.window.move({{ workspace = {w["ws"]}, silent = true, window = "address:{w["address"]}" }})')
+    for c in hj("clients"):   # всё, что застряло в тайнике (например, запущенная Яндекс Музыка)
+        if c["workspace"]["name"] == STASH:
+            ws = st.get("prev_ws", 1)
+            dispatch(f'hl.dsp.window.move({{ workspace = {ws}, silent = true, window = "address:{c["address"]}" }})')
+    hide_stash()
+    dispatch(f"hl.dsp.focus({{ workspace = {st.get('prev_ws', 1)} }})")
+    os.remove(STATE)
+    subprocess.run(["pkill", "-RTMIN+11", "waybar"])
+    notify("выключен — всё вернулось" + ("\nЯндекс Музыка оставлена открытой" if st.get("launched_ym") else ""))
+
+
+def plan():
+    playing = audio_pids()
+    for c in hj("clients"):
+        ws = c["workspace"]["name"]; cls = c.get("class", "").lower()
+        if ws.startswith("special:") or cls in KEEP_CLASSES:
+            print(f"  оставить     {c.get('class','')[:24]:24} ({ws})"); continue
+        procs = tree(c["pid"])
+        if comm(c["pid"]) in NO_FREEZE: act = "спрятать"
+        elif playing & set(procs): act = "спрятать (звук — не морозить)"
+        else: act = f"спрятать + заморозить {len([p for p in procs if comm(p) not in NO_FREEZE])} проц."
+        print(f"  {act:34} {c.get('class','')[:24]:24} (стол {ws})")
+
+
+def guard():
+    """Пока включён lo-fi: любое переключение на другой стол — сразу назад на LOFI_WS."""
+    sig = os.environ["HYPRLAND_INSTANCE_SIGNATURE"]
+    rt = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+    import socket
+    sk = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    sk.connect(f"{rt}/hypr/{sig}/.socket2.sock")
+    buf, last_note = b"", 0
+    while os.path.exists(STATE):
+        data = sk.recv(4096)
+        if not data:
+            break
+        buf += data
+        *lines, buf = buf.split(b"\n")
+        for raw in lines:
+            ev, _, arg = raw.decode(errors="replace").partition(">>")
+            if ev == "workspacev2":
+                wid = arg.split(",", 1)[0]
+                if wid.lstrip("-").isdigit() and int(wid) != LOFI_WS and os.path.exists(STATE):
+                    dispatch(f"hl.dsp.focus({{ workspace = {LOFI_WS} }})")
+                    if time.time() - last_note > 15:
+                        notify("в лоу-фай столы не переключаются\nвыйти: Super+N → Lo-fi"); last_note = time.time()
+
+
+def status():
+    print("true" if os.path.exists(STATE) else "false")
+
+
+cmd = sys.argv[1] if len(sys.argv) > 1 else "toggle"
+if cmd in ("status", "plan", "guard"):
+    {"status": status, "plan": plan, "guard": guard}[cmd](); sys.exit(0)
+
+import fcntl
+os.makedirs(os.path.dirname(STATE), exist_ok=True)
+LOG = f"{HOME}/.cache/rice/lofi.log"
+def jlog(msg):
+    try:
+        parent = open(f"/proc/{os.getppid()}/cmdline").read().replace("\0", " ").strip()[:120]
+    except Exception:
+        parent = "?"
+    with open(LOG, "a") as f:
+        f.write(f"{time.strftime('%F %T')} {msg} | вызвал: {parent}\n")
+
+lock = open(f"{HOME}/.cache/rice/lofi.lock", "w")
+try:
+    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)      # уже идёт включение/выключение — игнор
+except OSError:
+    jlog(f"{cmd}: пропущено — режим ещё переключается"); sys.exit(0)
+
+STAMP = f"{HOME}/.cache/rice/lofi.last"
+if cmd == "toggle":
+    try:
+        if time.time() - os.path.getmtime(STAMP) < 3:      # дребезг / двойной клик
+            jlog("toggle: пропущено — повторное нажатие быстрее 3 с"); sys.exit(0)
+    except FileNotFoundError:
+        pass
+    cmd = "off" if os.path.exists(STATE) else "on"
+open(STAMP, "w").close()
+jlog(cmd)
+{"on": on, "off": off}[cmd]()
+jlog(f"{cmd}: готово")

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Ночной свет (hyprsunset): без аргумента — переключить, status — статус для waybar
+if [ "$1" = status ]; then
+  pgrep -x hyprsunset >/dev/null && echo '{"text":"󰖔","class":"on","tooltip":"Night light: on"}' \
+                                 || echo '{"text":"󰖨","class":"off","tooltip":"Night light: off"}'
+  exit
+fi
+pgrep -x hyprsunset >/dev/null && pkill -x hyprsunset || setsid -f hyprsunset -t 4500 >/dev/null 2>&1
+sleep 0.2; pkill -RTMIN+9 waybar

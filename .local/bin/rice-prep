@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# rice-prep <видео> [имя] [сдвиг_обрезки_сверху_0..1] [длина_перехода_сек]
+# Готовит живые обои под монитор 2560x1080@200:
+#   - обрезка до 21:9 (сдвиг 0 = верх кадра, 0.5 = центр)
+#   - 50 fps (ровно 1/4 от 200 Гц — без рывков), кадры смешиваются плавно
+#   - бесшовный цикл: конец перетекает в начало
+#   - кладёт результат в ~/Pictures/wallpapers/<имя>.mp4
+set -e
+IN="$1"; NAME="${2:-$(basename "${IN%.*}")}"; POS="${3:-0.5}"; F="${4:-1.5}"
+OUT="$HOME/Pictures/wallpapers/$NAME.mp4"
+TMP="$HOME/.cache/rice/prep-$$.mkv"
+mkdir -p "$(dirname "$TMP")" "$HOME/Pictures/wallpapers"
+
+# 1) обрезка + масштаб + 50 fps
+ffmpeg -v error -y -i "$IN" -an -vf "\
+crop=iw:iw*1080/2560:0:(ih-iw*1080/2560)*$POS,\
+scale=2560:1080:flags=lanczos,\
+framerate=fps=50:interp_start=0:interp_end=255:scene=100,\
+format=yuv420p" -c:v libx264 -preset fast -crf 14 "$TMP"
+
+# 2) бесшовный цикл
+D=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$TMP")
+OFF=$(python3 -c "print(round($D-2*$F,3))")
+ffmpeg -v error -y -i "$TMP" -filter_complex "\
+[0:v]trim=start=$F,setpts=PTS-STARTPTS[a];\
+[0:v]trim=end=$F,setpts=PTS-STARTPTS[b];\
+[a][b]xfade=transition=fade:duration=$F:offset=$OFF,format=yuv420p[v]" \
+-map "[v]" -an -r 50 -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p -movflags +faststart "$OUT"
+rm -f "$TMP"
+echo "$OUT"

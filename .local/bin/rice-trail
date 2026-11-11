@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# rice-trail [blaze|lightning|motion-blur|default|plain|off]
+# Эффект курсора при наборе текста в kitty. Применяется сразу во всех окнах.
+F="$HOME/.config/kitty/trail.conf"
+STYLE="${1:-blaze}"
+case "$STYLE" in
+  off)
+    printf '# rice-trail: off\ncursor_trail 0\n' > "$F" ;;
+  plain)
+    printf '# rice-trail: plain (без шейдера)\ncursor_trail 1\ncursor_trail_start_threshold 0\ncursor_trail_decay 0.08 0.3\n' > "$F" ;;
+  blaze|lightning|motion-blur|default)
+    command -v slangc >/dev/null || { echo "нужен пакет shader-slang (sudo pacman -S shader-slang)" >&2; exit 1; }
+    cat > "$F" <<CONF
+# rice-trail: $STYLE  (сменить: rice-trail blaze|lightning|motion-blur|default|plain|off)
+cursor_trail 1
+cursor_trail_start_threshold 0
+cursor_trail_decay 0.08 0.3
+cursor_trail_color none
+custom_shaders cursor-trail-$STYLE
+CONF
+    ;;
+  *) echo "использование: rice-trail [blaze|lightning|motion-blur|default|plain|off]" >&2; exit 1 ;;
+esac
+pkill -USR1 -x kitty 2>/dev/null   # перечитать конфиг во всех окнах kitty
+echo "курсор: $STYLE"

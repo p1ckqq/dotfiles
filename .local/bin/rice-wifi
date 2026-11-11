@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+"""rice-wifi — меню Wi-Fi в wofi (nmcli)."""
+import subprocess, sys
+
+def run(*a, inp=None):
+    return subprocess.run(a, input=inp, capture_output=True, text=True)
+
+def wofi(items, prompt, password=False, lines=None):
+    args = ["wofi", "--dmenu", "--prompt", prompt, "--cache-file", "/dev/null", "--insensitive",
+            "--width", "520", "--height", str(min(560, 60 + 34 * (lines or len(items))))]
+    if password:
+        args += ["--password", "--lines", "1", "--height", "90"]
+    r = subprocess.run(args, input="\n".join(items), capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else None
+
+def notify(title, body=""):
+    subprocess.run(["notify-send", "-a", "Wi-Fi", "-i", "network-wireless", title, body])
+
+def split_t(line):
+    """Разбор `nmcli -t`: поля через ':', двоеточие внутри поля экранировано как '\\:'."""
+    out, cur, esc = [], "", False
+    for ch in line:
+        if esc: cur += ch; esc = False
+        elif ch == "\\": esc = True
+        elif ch == ":": out.append(cur); cur = ""
+        else: cur += ch
+    out.append(cur)
+    return out
+
+BARS = ["\U000F092F", "\U000F091F", "\U000F0922", "\U000F0925", "\U000F0928"]
+
+def main():
+    if run("nmcli", "radio", "wifi").stdout.strip() != "enabled":
+        ch = wofi(["\U000F05A9  Включить Wi-Fi", "\U000F0C3C  Открыть nmtui"], "Wi-Fi выключен")
+        if ch and "Включить" in ch:
+            run("nmcli", "radio", "wifi", "on"); notify("Wi-Fi включён")
+        elif ch and "nmtui" in ch:
+            subprocess.Popen(["kitty", "-e", "nmtui"])
+        return
+
+    rescan = len(sys.argv) > 1 and sys.argv[1] == "--rescan"
+    out = run("nmcli", "-t", "-f", "IN-USE,SSID,SIGNAL,SECURITY", "dev", "wifi", "list",
+              "--rescan", "yes" if rescan else "auto").stdout
+    known = {split_t(l)[0] for l in run("nmcli", "-t", "-f", "NAME,TYPE", "con", "show").stdout.splitlines()
+             if l.endswith(":802-11-wireless")}
+
+    nets = {}
+    for line in out.splitlines():
+        inuse, ssid, sig, sec = (split_t(line) + ["", "", "", ""])[:4]
+        if not ssid:
+            continue
+        sig = int(sig or 0)
+        if ssid not in nets or sig > nets[ssid]["sig"] or inuse == "*":
+            nets[ssid] = {"sig": sig, "sec": sec, "on": inuse == "*" or nets.get(ssid, {}).get("on", False)}
+
+    rows, keymap = [], {}
+    for ssid, n in sorted(nets.items(), key=lambda kv: (not kv[1]["on"], -kv[1]["sig"])):
+        icon = BARS[min(4, n["sig"] // 20)]
+        lock = "\U000F033E" if n["sec"] and n["sec"] != "--" else " "
+        mark = "  \U000F012C подключено" if n["on"] else ("  · сохранена" if ssid in known else "")
+        row = f"{icon}  {lock}  {ssid}   {n['sig']}%{mark}"
+        rows.append(row); keymap[row] = ssid
+
+    actions = ["\U000F0450  Обновить список", "\U000F0D5B  Отключиться", "\U000F092E  Выключить Wi-Fi",
+               "\U000F0C3C  Расширенные настройки (nmtui)"]
+    ch = wofi(rows + actions, "Wi-Fi", lines=len(rows) + len(actions))
+    if not ch:
+        return
+    if "Обновить" in ch:
+        return subprocess.Popen([sys.argv[0], "--rescan"])
+    if "Отключиться" in ch:
+        dev = next((split_t(l)[0] for l in run("nmcli", "-t", "-f", "DEVICE,TYPE", "dev").stdout.splitlines()
+                    if split_t(l)[1:2] == ["wifi"]), None)
+        if dev: run("nmcli", "dev", "disconnect", dev); notify("Wi-Fi отключён")
+        return
+    if "Выключить" in ch:
+        run("nmcli", "radio", "wifi", "off"); notify("Wi-Fi выключен"); return
+    if "nmtui" in ch:
+        subprocess.Popen(["kitty", "-e", "nmtui"]); return
+
+    ssid = keymap.get(ch)
+    if not ssid:
+        return
+    if nets[ssid]["on"]:
+        notify(f"Уже подключено к {ssid}"); return
+    notify(f"Подключаюсь к {ssid}…")
+    if ssid in known:
+        r = run("nmcli", "con", "up", "id", ssid)
+    elif nets[ssid]["sec"] and nets[ssid]["sec"] != "--":
+        pw = wofi([], f"Пароль для {ssid}", password=True)
+        if not pw:
+            return
+        r = run("nmcli", "dev", "wifi", "connect", ssid, "password", pw)
+    else:
+        r = run("nmcli", "dev", "wifi", "connect", ssid)
+    if r.returncode == 0:
+        notify(f"Подключено к {ssid}")
+    else:
+        notify(f"Не удалось подключиться к {ssid}", (r.stderr or r.stdout).strip()[:200])
+
+main()

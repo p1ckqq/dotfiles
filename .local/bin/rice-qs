@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# rice-qs — быстрые кнопки центра уведомлений (swaync).
+# Проверки печатают true/false, без хитрых кавычек (swaync их плохо разбирает).
+case "$1" in
+  wifi-status)  [ "$(nmcli radio wifi)" = enabled ] && echo true || echo false ;;
+  wifi-toggle)  [ "$(nmcli radio wifi)" = enabled ] && nmcli radio wifi off || nmcli radio wifi on ;;
+  bt-status)    bluetoothctl show 2>/dev/null | grep -q "Powered: yes" && echo true || echo false ;;
+  bt-toggle)    bluetoothctl show 2>/dev/null | grep -q "Powered: yes" && bluetoothctl power off || bluetoothctl power on ;;
+  mic-status)   wpctl get-volume @DEFAULT_AUDIO_SOURCE@ | grep -q MUTED && echo false || echo true ;;
+  mic-toggle)   wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle ;;
+  night-status) pgrep -x hyprsunset >/dev/null && echo true || echo false ;;
+  idle-status)  pgrep -x hypridle  >/dev/null && echo false || echo true ;;
+  idle-toggle)  pkill -x hypridle || setsid -f hypridle ;;
+  *) echo "usage: rice-qs {wifi|bt|mic|night|idle}-{status|toggle}" >&2; exit 1 ;;
+esac

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# rice-loopfix <вход.mp4> <выход.mp4> [длина_перехода_сек]
+# Делает бесшовный цикл: конец ролика плавно перетекает в начало (xfade).
+IN="$1"; OUT="$2"; F="${3:-1}"
+D=$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$IN")
+L=$(python3 -c "print(round($D-$F,3))")        # длина результата
+OFF=$(python3 -c "print(round($D-2*$F,3))")    # когда начинается переход
+ffmpeg -v error -y -i "$IN" -filter_complex "\
+[0:v]trim=start=$F,setpts=PTS-STARTPTS,format=yuv420p[a];\
+[0:v]trim=end=$F,setpts=PTS-STARTPTS,format=yuv420p[b];\
+[a][b]xfade=transition=fade:duration=$F:offset=$OFF,format=yuv420p[v]" \
+-map "[v]" -an -c:v libx264 -preset slow -crf 17 -pix_fmt yuv420p -movflags +faststart "$OUT"
+echo "$OUT: ${L}s"

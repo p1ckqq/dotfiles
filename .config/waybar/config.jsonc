@@ -1,0 +1,454 @@
+[
+  {
+    "name": "top",
+    "layer": "top",
+    "position": "top",
+    "height": 30,
+    "spacing": 0,
+    "reload_style_on_change": true,
+    "modules-left": [
+      "cpu",
+      "power-profiles-daemon",
+      "temperature",
+      "memory",
+      "disk"
+    ],
+    "modules-center": [
+      "group/media",
+      "idle_inhibitor",
+      "clock",
+      "custom/vpn"
+    ],
+    "modules-right": [
+      "custom/weather",
+      "custom/picker",
+      "custom/clip",
+      "custom/updates",
+      "custom/nightlight",
+      "custom/record"
+    ],
+    "cpu": {
+      "interval": 2,
+      "format": "{usage}% 󰻠"
+    },
+    "power-profiles-daemon": {
+      "format": "{icon}",
+      "tooltip-format": "Профиль: {profile}",
+      "format-icons": {
+        "performance": "󰉁",
+        "balanced": "󰗑",
+        "power-saver": "󰌪",
+        "default": "󰉁"
+      }
+    },
+    "temperature": {
+      "interval": 3,
+      "hwmon-path-abs": "/sys/devices/pci0000:00/0000:00:18.3/hwmon",
+      "input-filename": "temp1_input",
+      "critical-threshold": 85,
+      "format": "{temperatureC}°C 󰈸"
+    },
+    "memory": {
+      "interval": 3,
+      "format": "{used:0.2f}G 󰍛",
+      "on-click": "kitty -e btop"
+    },
+    "disk": {
+      "interval": 60,
+      "path": "/",
+      "format": "{percentage_used}% 󰋊"
+    },
+    "idle_inhibitor": {
+      "format": "{icon}",
+      "format-icons": {
+        "activated": "󰈈",
+        "deactivated": "󰈉"
+      },
+      "tooltip-format-activated": "Сон заблокирован",
+      "tooltip-format-deactivated": "Сон разрешён"
+    },
+    "clock": {
+      "interval": 1,
+      "format": "󰥔 {:%H:%M:%S}",
+      "format-alt": "󰃭 {:%a %d %b}",
+      "tooltip-format": "<tt>{calendar}</tt>"
+    },
+    "custom/vpn": {
+      "exec": "~/.local/bin/rice-vpn",
+      "return-type": "json",
+      "interval": 5
+    },
+    "custom/weather": {
+      "exec": "~/.local/bin/rice-weather",
+      "return-type": "json",
+      "interval": 1800
+    },
+    "custom/picker": {
+      "format": "󰈊",
+      "tooltip-format": "Пипетка",
+      "on-click": "hyprpicker -a"
+    },
+    "custom/clip": {
+      "format": "󰅇",
+      "tooltip-format": "Буфер обмена",
+      "on-click": "~/.local/bin/rice-clip"
+    },
+    "custom/updates": {
+      "exec": "n=$(checkupdates 2>/dev/null | wc -l); echo $n",
+      "interval": 3600,
+      "format": "󰏗 {}",
+      "tooltip-format": "Обновления: {}",
+      "on-click": "kitty -e sudo pacman -Syu"
+    },
+    "custom/nightlight": {
+      "exec": "~/.local/bin/rice-nightlight status",
+      "return-type": "json",
+      "interval": "once",
+      "signal": 9,
+      "on-click": "~/.local/bin/rice-nightlight"
+    },
+    "custom/record": {
+      "exec": "~/.local/bin/rice-record status",
+      "return-type": "json",
+      "interval": "once",
+      "signal": 10,
+      "on-click": "~/.local/bin/rice-record"
+    },
+    "group/media": {
+      "orientation": "horizontal",
+      "modules": [
+        "custom/mprev",
+        "custom/media",
+        "custom/mnext"
+      ]
+    },
+    "custom/mprev": {
+      "exec": "playerctl -p '%any,!firefox' status >/dev/null 2>&1 && echo '󰒮' || echo ''",
+      "interval": 2,
+      "format": "{}",
+      "tooltip": false,
+      "on-click": "playerctl previous",
+      "hide-empty-text": true
+    },
+    "custom/mnext": {
+      "exec": "playerctl -p '%any,!firefox' status >/dev/null 2>&1 && echo '󰒭' || echo ''",
+      "interval": 2,
+      "format": "{}",
+      "tooltip": false,
+      "on-click": "playerctl next",
+      "hide-empty-text": true
+    },
+    "custom/media": {
+      "exec": "~/.local/bin/rice-media",
+      "return-type": "json",
+      "format": "{}",
+      "escape": false,
+      "hide-empty-text": true,
+      "on-click": "playerctl -p '%any,!firefox' play-pause",
+      "on-click-right": "playerctl -p '%any,!firefox' next",
+      "on-click-middle": "playerctl -p '%any,!firefox' previous",
+      "on-scroll-up": "playerctl -p '%any,!firefox' volume 0.05+",
+      "on-scroll-down": "playerctl -p '%any,!firefox' volume 0.05-"
+    }
+  },
+  {
+    "name": "bottom",
+    "layer": "top",
+    "position": "bottom",
+    "height": 30,
+    "spacing": 0,
+    "reload_style_on_change": true,
+    "modules-left": [
+      "custom/launcher",
+      "group/tasks"
+    ],
+    "modules-center": [
+      "group/ws"
+    ],
+    "modules-right": [
+      "tray",
+      "custom/notify",
+      "network",
+      "bluetooth",
+      "hyprland/language",
+      "wireplumber",
+      "wireplumber#mic",
+      "custom/power"
+    ],
+    "custom/launcher": {
+      "format": "󰖌",
+      "tooltip-format": "Приложения",
+      "on-click": "pkill -x wofi || wofi --show drun"
+    },
+    "wlr/taskbar": {
+      "format": "{icon} {name}",
+      "icon-size": 14,
+      "tooltip-format": "{title}\nЛКМ — свернуть/развернуть · ПКМ/СКМ — закрыть",
+      "on-click": "minimize-raise",
+      "on-click-middle": "close",
+      "ignore-list": [],
+      "sort-by-app-id": false,
+      "rewrite": {
+        "org.telegram.desktop": "Telegram",
+        "com.obsproject.Studio": "OBS Studio",
+        "firefox": "Firefox",
+        "kitty": "Terminal",
+        "org.kde.dolphin": "Files"
+      },
+      "on-click-right": "close"
+    },
+    "group/ws": {
+      "orientation": "horizontal",
+      "modules": [
+        "custom/ws1",
+        "custom/ws2",
+        "custom/ws3",
+        "custom/ws4",
+        "custom/ws5"
+      ]
+    },
+    "custom/ws1": {
+      "exec": "~/.local/bin/rice-ws 1",
+      "return-type": "json",
+      "format": "{}",
+      "on-click": "hyprctl dispatch 'hl.dsp.focus({workspace=1})'",
+      "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e-1\"})'",
+      "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e+1\"})'"
+    },
+    "custom/ws2": {
+      "exec": "~/.local/bin/rice-ws 2",
+      "return-type": "json",
+      "format": "{}",
+      "on-click": "hyprctl dispatch 'hl.dsp.focus({workspace=2})'",
+      "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e-1\"})'",
+      "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e+1\"})'"
+    },
+    "custom/ws3": {
+      "exec": "~/.local/bin/rice-ws 3",
+      "return-type": "json",
+      "format": "{}",
+      "on-click": "hyprctl dispatch 'hl.dsp.focus({workspace=3})'",
+      "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e-1\"})'",
+      "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e+1\"})'"
+    },
+    "custom/ws4": {
+      "exec": "~/.local/bin/rice-ws 4",
+      "return-type": "json",
+      "format": "{}",
+      "on-click": "hyprctl dispatch 'hl.dsp.focus({workspace=4})'",
+      "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e-1\"})'",
+      "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e+1\"})'"
+    },
+    "custom/ws5": {
+      "exec": "~/.local/bin/rice-ws 5",
+      "return-type": "json",
+      "format": "{}",
+      "on-click": "hyprctl dispatch 'hl.dsp.focus({workspace=5})'",
+      "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e-1\"})'",
+      "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e+1\"})'"
+    },
+    "tray": {
+      "icon-size": 15,
+      "spacing": 8
+    },
+    "custom/notify": {
+      "exec": "swaync-client -swb",
+      "return-type": "json",
+      "format": "{text} {icon}",
+      "format-icons": {
+        "notification": "󰂚",
+        "none": "󰂜",
+        "dnd-notification": "󰂛",
+        "dnd-none": "󰂛",
+        "inhibited-notification": "󰂚",
+        "inhibited-none": "󰂜",
+        "dnd-inhibited-notification": "󰂛",
+        "dnd-inhibited-none": "󰂛"
+      },
+      "on-click": "swaync-client -t -sw",
+      "on-click-right": "swaync-client -d -sw",
+      "escape": true
+    },
+    "hyprland/language": {
+      "format": "󰌌 {}",
+      "format-en": "EN",
+      "format-ru": "RU"
+    },
+    "wireplumber": {
+      "format": "󰕾 {volume}%",
+      "format-muted": "󰝟 mute",
+      "on-click": "pavucontrol",
+      "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+      "scroll-step": 5
+    },
+    "wireplumber#mic": {
+      "node-type": "Audio/Source",
+      "format": "󰍬 {volume}%",
+      "format-muted": "󰍭 mute",
+      "on-click": "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle",
+      "scroll-step": 5
+    },
+    "custom/power": {
+      "format": "󰐥",
+      "tooltip-format": "Питание",
+      "on-click": "~/.local/bin/rice-power"
+    },
+    "group/tasks": {
+      "orientation": "horizontal",
+      "modules": [
+        "custom/task0",
+        "custom/task1",
+        "custom/task2",
+        "custom/task3",
+        "custom/task4",
+        "custom/task5",
+        "custom/task6",
+        "custom/task7",
+        "custom/task8",
+        "custom/task9",
+        "custom/task10",
+        "custom/task11"
+      ]
+    },
+    "custom/task0": {
+      "exec": "~/.local/bin/rice-task watch 0",
+      "return-type": "json",
+      "format": "{}",
+      "on-click": "~/.local/bin/rice-task click 0",
+      "on-click-middle": "~/.local/bin/rice-task close 0",
+      "on-click-right": "~/.local/bin/rice-task close 0",
+      "hide-empty-text": true
+    },
+    "custom/task1": {
+      "exec": "~/.local/bin/rice-task watch 1",
+      "return-type": "json",
+      "format": "{}",
+      "on-click": "~/.local/bin/rice-task click 1",
+      "on-click-middle": "~/.local/bin/rice-task close 1",
+      "on-click-right": "~/.local/bin/rice-task close 1",
+      "hide-empty-text": true
+    },
+    "custom/task2": {
+      "exec": "~/.local/bin/rice-task watch 2",
+      "return-type": "json",
+      "format": "{}",
+      "on-click": "~/.local/bin/rice-task click 2",
+      "on-click-middle": "~/.local/bin/rice-task close 2",
+      "on-click-right": "~/.local/bin/rice-task close 2",
+      "hide-empty-text": true
+    },
+    "custom/task3": {
+      "exec": "~/.local/bin/rice-task watch 3",
+      "return-type": "json",
+      "format": "{}",
+      "on-click": "~/.local/bin/rice-task click 3",
+      "on-click-middle": "~/.local/bin/rice-task close 3",
+      "on-click-right": "~/.local/bin/rice-task close 3",
+      "hide-empty-text": true
+    },
+    "custom/task4": {
+      "exec": "~/.local/bin/rice-task watch 4",
+      "return-type": "json",
+      "format": "{}",
+      "on-click": "~/.local/bin/rice-task click 4",
+      "on-click-middle": "~/.local/bin/rice-task close 4",
+      "on-click-right": "~/.local/bin/rice-task close 4",
+      "hide-empty-text": true
+    },
+    "custom/task5": {
+      "exec": "~/.local/bin/rice-task watch 5",
+      "return-type": "json",
+      "format": "{}",
+      "on-click": "~/.local/bin/rice-task click 5",
+      "on-click-middle": "~/.local/bin/rice-task close 5",
+      "on-click-right": "~/.local/bin/rice-task close 5",
+      "hide-empty-text": true
+    },
+    "custom/task6": {
+      "exec": "~/.local/bin/rice-task watch 6",
+      "return-type": "json",
+      "format": "{}",
+      "on-click": "~/.local/bin/rice-task click 6",
+      "on-click-middle": "~/.local/bin/rice-task close 6",
+      "on-click-right": "~/.local/bin/rice-task close 6",
+      "hide-empty-text": true
+    },
+    "custom/task7": {
+      "exec": "~/.local/bin/rice-task watch 7",
+      "return-type": "json",
+      "format": "{}",
+      "on-click": "~/.local/bin/rice-task click 7",
+      "on-click-middle": "~/.local/bin/rice-task close 7",
+      "on-click-right": "~/.local/bin/rice-task close 7",
+      "hide-empty-text": true
+    },
+    "custom/task8": {
+      "exec": "~/.local/bin/rice-task watch 8",
+      "return-type": "json",
+      "format": "{}",
+      "on-click": "~/.local/bin/rice-task click 8",
+      "on-click-middle": "~/.local/bin/rice-task close 8",
+      "on-click-right": "~/.local/bin/rice-task close 8",
+      "hide-empty-text": true
+    },
+    "custom/task9": {
+      "exec": "~/.local/bin/rice-task watch 9",
+      "return-type": "json",
+      "format": "{}",
+      "on-click": "~/.local/bin/rice-task click 9",
+      "on-click-middle": "~/.local/bin/rice-task close 9",
+      "on-click-right": "~/.local/bin/rice-task close 9",
+      "hide-empty-text": true
+    },
+    "custom/task10": {
+      "exec": "~/.local/bin/rice-task watch 10",
+      "return-type": "json",
+      "format": "{}",
+      "on-click": "~/.local/bin/rice-task click 10",
+      "on-click-middle": "~/.local/bin/rice-task close 10",
+      "on-click-right": "~/.local/bin/rice-task close 10",
+      "hide-empty-text": true
+    },
+    "custom/task11": {
+      "exec": "~/.local/bin/rice-task watch 11",
+      "return-type": "json",
+      "format": "{}",
+      "on-click": "~/.local/bin/rice-task click 11",
+      "on-click-middle": "~/.local/bin/rice-task close 11",
+      "on-click-right": "~/.local/bin/rice-task close 11",
+      "hide-empty-text": true
+    },
+    "network": {
+      "interval": 3,
+      "format-wifi": "{icon} {signalStrength}%",
+      "format-ethernet": "󰈀 eth",
+      "format-disconnected": "󰤮 off",
+      "format-disabled": "󰤮 off",
+      "format-icons": [
+        "󰤯",
+        "󰤟",
+        "󰤢",
+        "󰤥",
+        "󰤨"
+      ],
+      "tooltip-format-wifi": "{essid}\n{ipaddr} · {frequency} GHz\n⇣ {bandwidthDownBytes}  ⇡ {bandwidthUpBytes}",
+      "tooltip-format-disconnected": "Нет подключения",
+      "on-click": "/home/p1ckq/.local/bin/rice-wifi",
+      "on-click-right": "kitty -e nmtui"
+    },
+    "bluetooth": {
+      "format": "󰂯",
+      "format-disabled": "󰂲",
+      "format-off": "󰂲",
+      "format-no-controller": "",
+      "format-connected": "󰂱 {num_connections}",
+      "format-connected-battery": "󰂱 {device_battery_percentage}%",
+      "tooltip-format": "{controller_alias}\n{num_connections} подключено",
+      "tooltip-format-connected": "{controller_alias}\n{device_enumerate}",
+      "tooltip-format-enumerate-connected": "{device_alias}",
+      "tooltip-format-enumerate-connected-battery": "{device_alias} · {device_battery_percentage}%",
+      "on-click": "blueman-manager",
+      "on-click-right": "/home/p1ckq/.local/bin/rice-qs bt-toggle"
+    }
+  }
+]

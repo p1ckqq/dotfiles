@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Меню питания через wofi
+c=$(printf '󰌾  Lock\n󰍃  Logout\n󰤄  Suspend\n󰜉  Reboot\n󰐥  Shutdown' | wofi --dmenu --prompt "" --width 260 --height 230 --cache-file /dev/null)
+case "$c" in
+  *Lock)     hyprlock ;;
+  *Logout)   hyprctl dispatch 'hl.dsp.exit()' ;;
+  *Suspend)  systemctl suspend ;;
+  *Reboot)   systemctl reboot ;;
+  *Shutdown) systemctl poweroff ;;
+esac

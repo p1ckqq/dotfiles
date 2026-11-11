@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Bluetooth
+Name[ru]=Bluetooth — устройства
+Comment=Подключить наушники и другие устройства
+Keywords=bluetooth;блютуз;наушники;
+Icon=bluetooth
+Exec=blueman-manager
+Terminal=false
+Categories=Settings;

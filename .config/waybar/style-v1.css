@@ -1,0 +1,93 @@
+@import "colors.css";
+
+* {
+  font-family: "JetBrainsMono Nerd Font", monospace;
+  font-size: 12px;
+  font-weight: 600;
+  min-height: 0;
+  border: none;
+  border-radius: 0;
+}
+
+window#waybar {
+  background: transparent;
+  color: @on_surface;
+}
+
+tooltip {
+  background: @surface;
+  border: 1px solid @outline;
+  border-radius: 3px;
+}
+
+/* ---------- слева ---------- */
+#workspaces { margin-right: 6px; }
+#workspaces button {
+  padding: 0 8px;
+  margin: 2px 1px;
+  color: @on_surface;
+  background: transparent;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+#workspaces button.empty { color: alpha(@on_surface, 0.55); }
+#workspaces button.active {
+  background: @pill;
+  color: @primary;
+  padding: 0 12px;
+}
+#workspaces button:hover { background: alpha(@primary, 0.25); box-shadow: none; }
+
+#window {
+  background: @pill;
+  padding: 0 14px 0 10px;
+  margin: 2px 0;
+  border-radius: 0 12px 12px 0;   /* «стрелка»-хвост как в видео */
+  color: @on_surface;
+}
+window#waybar.empty #window { background: @pill; }
+
+#ws { margin-right: 6px; }
+#custom-ws1, #custom-ws2, #custom-ws3, #custom-ws4, #custom-ws5 {
+  padding: 0 8px;
+  margin: 2px 1px;
+  border-radius: 10px;
+  color: @on_surface;
+}
+#custom-ws1.empty, #custom-ws2.empty, #custom-ws3.empty, #custom-ws4.empty, #custom-ws5.empty {
+  color: alpha(@on_surface, 0.55);
+}
+#custom-ws1.active, #custom-ws2.active, #custom-ws3.active, #custom-ws4.active, #custom-ws5.active {
+  background: @pill;
+  color: @primary;
+  padding: 0 12px;
+}
+#custom-ws1:hover, #custom-ws2:hover, #custom-ws3:hover, #custom-ws4:hover, #custom-ws5:hover {
+  background: alpha(@primary, 0.25);
+}
+
+/* ---------- центр и справа: таблетки ---------- */
+#center, #right {
+  background: @pill;
+  margin: 2px 0;
+  padding: 0 6px;
+  border-radius: 0 0 6px 6px;
+}
+#right { border-radius: 6px; }
+
+#tray, #language, #clock, #custom-arch, #cpu, #memory, #temperature,
+#network, #wireplumber {
+  padding: 0 7px;
+  color: @on_surface;
+  background: transparent;
+}
+
+#custom-arch {
+  font-size: 15px;
+  color: @primary;
+  padding: 0 12px;
+}
+
+#temperature.critical { color: @error; }
+#wireplumber.muted { color: alpha(@on_surface, 0.5); }
+#network.disconnected { color: @error; }

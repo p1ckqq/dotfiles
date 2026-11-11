@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+"""rice-clock — пиксельные часы + дата по центру терминала (виджет). q / Ctrl+C — выход."""
+import curses, time
+
+# цифры 3x5: каждая «клетка» рисуется как ██
+FONT = {
+    "0": ["###", "# #", "# #", "# #", "###"], "1": [" # ", "## ", " # ", " # ", "###"],
+    "2": ["###", "  #", "###", "#  ", "###"], "3": ["###", "  #", "###", "  #", "###"],
+    "4": ["# #", "# #", "###", "  #", "  #"], "5": ["###", "#  ", "###", "  #", "###"],
+    "6": ["###", "#  ", "###", "# #", "###"], "7": ["###", "  #", "  #", "  #", "  #"],
+    "8": ["###", "# #", "###", "# #", "###"], "9": ["###", "# #", "###", "  #", "###"],
+    ":": ["   ", " # ", "   ", " # ", "   "],
+}
+
+def render(t):
+    rows = [""] * 5
+    for ch in t:
+        for r in range(5):
+            rows[r] += FONT[ch][r].replace("#", "██").replace(" ", "  ") + "  "
+    return rows
+
+def main(scr):
+    curses.curs_set(0)
+    curses.use_default_colors()
+    curses.init_pair(1, 15, -1)
+    curses.init_pair(2, 7, -1)
+    scr.nodelay(True)
+    while True:
+        h, w = scr.getmaxyx()
+        rows = render(time.strftime("%H:%M"))
+        date = time.strftime("%a %b %d")
+        scr.erase()
+        top = max(0, (h - 7) // 2)
+        for i, r in enumerate(rows):
+            x = max(0, (w - len(r.rstrip())) // 2)
+            try: scr.addstr(top + i, x, r[: w - 1], curses.color_pair(1) | curses.A_BOLD)
+            except curses.error: pass
+        try: scr.addstr(top + 6, max(0, (w - len(date)) // 2), date, curses.color_pair(2))
+        except curses.error: pass
+        scr.refresh()
+        for _ in range(10):
+            try:
+                if scr.getkey() in ("q", "Q"): return
+            except curses.error: pass
+            time.sleep(0.1)
+
+try:
+    curses.wrapper(main)
+except KeyboardInterrupt:
+    pass

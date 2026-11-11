@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Запись экрана (wf-recorder): без аргумента — старт/стоп, status — для waybar
+if [ "$1" = status ]; then
+  pgrep -x wf-recorder >/dev/null && echo '{"text":"󰑋","class":"rec","tooltip":"Recording… click to stop"}' \
+                                  || echo '{"text":"󰑋","class":"idle","tooltip":"Record screen"}'
+  exit
+fi
+command -v wf-recorder >/dev/null || { notify-send "Запись" "Установи wf-recorder"; exit 1; }
+if pgrep -x wf-recorder >/dev/null; then
+  pkill -INT -x wf-recorder; notify-send "Запись" "Сохранено в ~/Videos"
+else
+  mkdir -p ~/Videos
+  setsid -f wf-recorder -f ~/Videos/rec-$(date +%F_%H-%M-%S).mp4 >/dev/null 2>&1
+fi
+sleep 0.3; pkill -RTMIN+10 waybar

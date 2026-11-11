@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# wall            — следующие обои из ~/Pictures/wallpapers
+# wall --random   — случайные
+# wall --restore  — восстановить последние (автозапуск)
+# wall <файл>     — конкретный файл
+# Меняет обои (awww, анимация grow от курсора) и перекрашивает всю систему через matugen.
+
+DIR="${WALL_DIR:-$HOME/Pictures/wallpapers}"
+STATE="$HOME/.cache/rice/current_wall"
+mkdir -p "$(dirname "$STATE")"
+
+mapfile -t LIST < <(find -L "$DIR" -maxdepth 1 -type f \
+    \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' -o -iname '*.gif' -o -iname '*.mp4' -o -iname '*.webm' -o -iname '*.mkv' \) | sort)
+
+if [ ${#LIST[@]} -eq 0 ] && [ -z "$1" -o "$1" = "--random" -o "$1" = "--restore" ]; then
+    notify-send "wall" "Нет картинок в $DIR" 2>/dev/null; exit 1
+fi
+
+CUR=$(cat "$STATE" 2>/dev/null)
+
+case "$1" in
+    --restore)
+        IMG="$CUR"; [ -f "$IMG" ] || IMG="${LIST[0]}"
+        RESTORE=1 ;;
+    --random)
+        IMG="${LIST[RANDOM % ${#LIST[@]}]}"
+        [ ${#LIST[@]} -gt 1 ] && while [ "$IMG" = "$CUR" ]; do IMG="${LIST[RANDOM % ${#LIST[@]}]}"; done ;;
+    "")
+        idx=-1
+        for i in "${!LIST[@]}"; do [ "${LIST[$i]}" = "$CUR" ] && idx=$i; done
+        IMG="${LIST[$(( (idx + 1) % ${#LIST[@]} ))]}" ;;
+    *)
+        IMG=$(realpath "$1") ;;
+esac
+
+[ -f "$IMG" ] || { echo "Нет файла: $IMG" >&2; exit 1; }
+
+# схема цветов: из ~/.config/rice/schemes.conf для этого файла, иначе по умолчанию
+read -r _ WALL_SCHEME WALL_IDX < <(grep -E "^$(basename "$IMG" | sed 's/[.[\*^$]/\\&/g')[[:space:]]" "$HOME/.config/rice/schemes.conf" 2>/dev/null)
+WALL_IDX=${WALL_IDX:-0}
+
+
+# фон экрана входа SDDM (файл принадлежит пользователю, sudo не нужен)
+update_login_bg() {
+    local T=/usr/share/sddm/themes/rice/background.png tmp="$HOME/.cache/rice/sddm-bg.png"
+    [ -w "$T" ] || return 0
+    magick "$1[0]" -resize 2560x1080^ -gravity center -extent 2560x1080 "$tmp" 2>/dev/null && cat "$tmp" > "$T"
+    cp "$tmp" "$HOME/.local/share/sddm-themes/rice/background.png" 2>/dev/null
+}
+
+# ---------- живые обои (видео) ----------
+case "${IMG,,}" in
+  *.mp4|*.webm|*.mkv)
+    echo "$IMG" > "$STATE"
+    FRAME="$HOME/.cache/rice/frame.png"
+    ffmpeg -v error -y -ss 2 -i "$IMG" -frames:v 1 "$FRAME"
+    [ -z "$RESTORE" ] && update_login_bg "$FRAME" &
+    pgrep -x awww-daemon >/dev/null || { setsid -f awww-daemon >/dev/null 2>&1; sleep 0.5; }
+    awww img "$FRAME" --transition-type none   # кадр как подложка / запасной вариант
+    pkill -x mpvpaper; sleep 0.2
+    if command -v mpvpaper >/dev/null; then
+        setsid -f mpvpaper -o "no-audio speed=${WALL_SPEED:-$(cat $HOME/.config/rice/wall-speed 2>/dev/null || echo 1)} loop-file=inf hwdec=auto-safe panscan=1.0 video-sync=display-resample override-display-fps=$(hyprctl monitors -j | python3 -c 'import json,sys;print(round(json.load(sys.stdin)[0]["refreshRate"]))')" '*' "$IMG" >/dev/null 2>&1
+    else
+        notify-send "wall" "mpvpaper не установлен — показан статичный кадр" 2>/dev/null
+    fi
+    cp "$FRAME" "$HOME/.cache/rice/lock.png"
+    matugen image "$FRAME" -c "$HOME/.config/rice/matugen.toml" -m dark -t "${WALL_SCHEME:-scheme-content}" --source-color-index "$WALL_IDX" >/dev/null 2>&1 \
+      || matugen image "$FRAME" -c "$HOME/.config/rice/matugen.toml" -m dark -t "${WALL_SCHEME:-scheme-content}" >/dev/null 2>&1
+    setsid -f "$HOME/.local/bin/rice-widgets" --refresh >/dev/null 2>&1
+    exit 0 ;;
+esac
+pkill -x mpvpaper 2>/dev/null   # статичные обои — гасим видео
+
+pgrep -x awww-daemon >/dev/null || { setsid -f awww-daemon >/dev/null 2>&1; sleep 0.5; }
+
+if [ -n "$RESTORE" ]; then
+    awww img "$IMG" --transition-type none
+else
+    POS=$(hyprctl cursorpos 2>/dev/null | tr -d '[:space:]')
+    awww img "$IMG" \
+        --transition-type grow \
+        --transition-pos "${POS:-center}" \
+        --transition-duration 0.8 \
+        --transition-fps 120 \
+        --transition-bezier .42,0,.58,1 \
+        --invert-y
+fi
+
+echo "$IMG" > "$STATE"
+# копия для hyprlock (ему нужен обычный png/jpg путь)
+magick "$IMG[0]" -resize 1920x "$HOME/.cache/rice/lock.png" 2>/dev/null & LOCKPID=$!
+[ -z "$RESTORE" ] && update_login_bg "$IMG" &
+
+matugen image "$IMG" -c "$HOME/.config/rice/matugen.toml" -m dark -t "${WALL_SCHEME:-scheme-content}" --source-color-index "$WALL_IDX" >/dev/null 2>&1 \
+  || matugen image "$IMG" -c "$HOME/.config/rice/matugen.toml" -m dark -t "${WALL_SCHEME:-scheme-content}" >/dev/null 2>&1
+wait "$LOCKPID"
+
+# перекрасить виджеты рабочего стола, если открыты
+setsid -f "$HOME/.local/bin/rice-widgets" --refresh >/dev/null 2>&1

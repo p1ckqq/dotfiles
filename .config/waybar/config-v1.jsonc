@@ -1,0 +1,152 @@
+{
+  "layer": "top",
+  "position": "top",
+  "height": 26,
+  "spacing": 0,
+  "margin-top": 2,
+  "margin-left": 4,
+  "margin-right": 4,
+  "reload_style_on_change": true,
+
+  "modules-left": ["group/ws", "hyprland/window"],
+  "modules-center": ["group/center"],
+  "modules-right": ["group/right"],
+
+  "group/ws": {
+    "orientation": "horizontal",
+    "modules": ["custom/ws1", "custom/ws2", "custom/ws3", "custom/ws4", "custom/ws5"]
+  },
+  "custom/ws1": {
+    "exec": "~/.local/bin/rice-ws 1",
+    "return-type": "json",
+    "format": "{}",
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({workspace=1})'",
+    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e-1\"})'",
+    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e+1\"})'"
+  },
+  "custom/ws2": {
+    "exec": "~/.local/bin/rice-ws 2",
+    "return-type": "json",
+    "format": "{}",
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({workspace=2})'",
+    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e-1\"})'",
+    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e+1\"})'"
+  },
+  "custom/ws3": {
+    "exec": "~/.local/bin/rice-ws 3",
+    "return-type": "json",
+    "format": "{}",
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({workspace=3})'",
+    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e-1\"})'",
+    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e+1\"})'"
+  },
+  "custom/ws4": {
+    "exec": "~/.local/bin/rice-ws 4",
+    "return-type": "json",
+    "format": "{}",
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({workspace=4})'",
+    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e-1\"})'",
+    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e+1\"})'"
+  },
+  "custom/ws5": {
+    "exec": "~/.local/bin/rice-ws 5",
+    "return-type": "json",
+    "format": "{}",
+    "on-click": "hyprctl dispatch 'hl.dsp.focus({workspace=5})'",
+    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e-1\"})'",
+    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e+1\"})'"
+  },
+
+  "group/center": {
+    "orientation": "horizontal",
+    "modules": ["tray", "hyprland/language", "clock", "custom/arch", "cpu", "memory", "temperature"]
+  },
+  "group/right": {
+    "orientation": "horizontal",
+    "modules": ["network", "wireplumber", "wireplumber#mic"]
+  },
+
+  "hyprland/workspaces": {
+    "format": "{name}",
+    "persistent-workspaces": { "*": 5 },
+    "on-scroll-up": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e-1\"})'",
+    "on-scroll-down": "hyprctl dispatch 'hl.dsp.focus({workspace=\"e+1\"})'"
+  },
+
+  "hyprland/window": {
+    "format": "{class}",
+    "icon": true,
+    "icon-size": 13,
+    "max-length": 40,
+    "rewrite": {
+      "": "Hyprland",
+      "kitty": "Terminal",
+      "firefox": "Firefox",
+      "org.telegram.desktop": "Telegram",
+      "org.kde.dolphin": "Files"
+    },
+    "separate-outputs": true
+  },
+
+  "tray": { "icon-size": 13, "spacing": 6 },
+
+  "hyprland/language": {
+    "format": "󰖟 {}",
+    "format-en": "EN",
+    "format-ru": "RU"
+  },
+
+  "clock": {
+    "format": "󰥔 {:%I:%M-%p}",
+    "format-alt": "󰃭 {:%a %d %b}",
+    "tooltip-format": "<tt>{calendar}</tt>",
+    "calendar": { "mode": "month", "format": { "today": "<b><u>{}</u></b>" } }
+  },
+
+  "custom/arch": {
+    "format": "󰣇",
+    "tooltip": false,
+    "on-click": "pkill -x wofi || wofi --show drun"
+  },
+
+  "cpu": { "interval": 2, "format": "󰘚 {usage}%" },
+
+  "memory": {
+    "interval": 3,
+    "format": "≡ {used:0.3f}GB",
+    "on-click": "kitty -e btop"
+  },
+
+  "temperature": {
+    "interval": 3,
+    "hwmon-path-abs": "/sys/devices/pci0000:00/0000:00:18.3/hwmon",
+    "input-filename": "temp1_input",
+    "critical-threshold": 85,
+    "format": "󰔏 {temperatureC}°C"
+  },
+
+  "network": {
+    "format-wifi": "󰖩 {signalStrength}%",
+    "format-ethernet": "󰈀 {bandwidthDownBytes}",
+    "format-disconnected": "󰖪 off",
+    "interval": 3,
+    "tooltip-format": "{ifname} {ipaddr}",
+    "on-click": "kitty -e nmtui"
+  },
+
+  "wireplumber": {
+    "format": "󰋋 {volume}%",
+    "format-muted": "󰟎 mute",
+    "on-click": "pavucontrol",
+    "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+    "scroll-step": 5
+  },
+
+  "wireplumber#mic": {
+    "node-type": "Audio/Source",
+    "format": "󰍬 {volume}%",
+    "format-muted": "󰍭 mute",
+    "on-click": "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle",
+    "scroll-step": 5
+  }
+}

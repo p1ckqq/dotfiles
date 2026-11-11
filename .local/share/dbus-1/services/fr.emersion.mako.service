@@ -1,0 +1,5 @@
+# rice: перекрывает системный запуск mako — уведомления обслуживает swaync
+[D-BUS Service]
+Name=org.freedesktop.Notifications
+Exec=/usr/bin/swaync
+SystemdService=swaync.service

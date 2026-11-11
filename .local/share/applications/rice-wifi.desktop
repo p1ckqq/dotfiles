@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Wi-Fi
+Name[ru]=Wi-Fi — сети
+Comment=Выбрать сеть Wi-Fi и подключиться
+Keywords=wifi;wi-fi;network;сеть;вайфай;интернет;
+Icon=network-wireless
+Exec=/home/p1ckq/.local/bin/rice-wifi
+Terminal=false
+Categories=Settings;Network;

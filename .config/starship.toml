@@ -1,0 +1,23 @@
+# Rice prompt:  󰣇  user   ~ 
+add_newline = false
+format = """[ 󰣇 ](bold fg:7 bg:8)[ $username ](bold fg:15 bg:8)[󰉋 $directory](fg:15 bg:8)[](fg:8)$git_branch$cmd_duration
+$character"""
+
+[username]
+show_always = true
+format = "$user"
+
+[directory]
+format = " $path "
+truncation_length = 2
+home_symbol = "~"
+
+[git_branch]
+format = " [ $branch](fg:7)"
+
+[cmd_duration]
+format = " [$duration](fg:8)"
+
+[character]
+success_symbol = "[▌](fg:7)"
+error_symbol = "[▌](fg:1)"

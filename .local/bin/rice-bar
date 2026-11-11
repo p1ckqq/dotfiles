@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Держит waybar запущенным: если упадёт — перезапускает через секунду.
+# Перезапуск вручную: pkill -x waybar (сторож поднимет его сам).
+exec 9>"${XDG_RUNTIME_DIR:-/tmp}/rice-bar.lock"
+flock -n 9 || exit 0          # сторож уже работает
+while :; do
+  waybar >/dev/null 2>&1
+  sleep 1
+done
