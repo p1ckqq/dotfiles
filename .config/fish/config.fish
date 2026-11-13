@@ -31,3 +31,6 @@ if status is-interactive
         if test $COLUMNS -lt 110; fastfetch --logo none; else; fastfetch; end
     end
 end
+
+# opencode
+fish_add_path /home/p1ckq/.opencode/bin

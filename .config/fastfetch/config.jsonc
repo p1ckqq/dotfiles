@@ -54,34 +54,34 @@
     "break",
     {
       "type": "custom",
-      "format": "╭─ 󰣇  system ──────────────────────",
+      "format": "╭─   system ──────────────────────",
       "outputColor": "38;2;159;202;252"
     },
     {
       "type": "os",
-      "key": "│ 󰣇  os      ",
+      "key": "│   os      ",
       "keyColor": "38;2;159;202;252",
       "format": "{pretty-name} {arch}"
     },
     {
       "type": "kernel",
-      "key": "│ 󰈙  kernel  ",
+      "key": "│   kernel  ",
       "keyColor": "38;2;159;202;252",
       "format": "{release}"
     },
     {
       "type": "uptime",
-      "key": "│ 󰔟  uptime  ",
+      "key": "│   uptime  ",
       "keyColor": "38;2;159;202;252"
     },
     {
       "type": "packages",
-      "key": "│ 󰏗  packages",
+      "key": "│   packages",
       "keyColor": "38;2;159;202;252"
     },
     {
       "type": "shell",
-      "key": "│ 󰆍  shell   ",
+      "key": "│   shell   ",
       "keyColor": "38;2;159;202;252"
     },
     {
@@ -91,38 +91,38 @@
     },
     {
       "type": "custom",
-      "format": "╭─ 󰗀  desktop ─────────────────────",
+      "format": "╭─   desktop ─────────────────────",
       "outputColor": "38;2;213;190;229"
     },
     {
       "type": "wm",
-      "key": "│ 󰗀  wm      ",
+      "key": "│   wm      ",
       "keyColor": "38;2;213;190;229"
     },
     {
       "type": "display",
-      "key": "│ 󰍹  display ",
+      "key": "│   display ",
       "keyColor": "38;2;213;190;229",
       "format": "{width}x{height} @ {refresh-rate}Hz"
     },
     {
       "type": "terminal",
-      "key": "│ 󰞷  terminal",
+      "key": "│   terminal",
       "keyColor": "38;2;213;190;229"
     },
     {
       "type": "terminalfont",
-      "key": "│ 󰬴  font    ",
+      "key": "│   font    ",
       "keyColor": "38;2;213;190;229"
     },
     {
       "type": "theme",
-      "key": "│ 󰸉  theme   ",
+      "key": "│   theme   ",
       "keyColor": "38;2;213;190;229"
     },
     {
       "type": "cursor",
-      "key": "│ 󰆿  cursor  ",
+      "key": "│   cursor  ",
       "keyColor": "38;2;213;190;229"
     },
     {
@@ -132,36 +132,36 @@
     },
     {
       "type": "custom",
-      "format": "╭─ 󰻠  hardware ────────────────────",
+      "format": "╭─   hardware ────────────────────",
       "outputColor": "38;2;186;200;219"
     },
     {
       "type": "cpu",
-      "key": "│ 󰻠  cpu     ",
+      "key": "│   cpu     ",
       "keyColor": "38;2;186;200;219",
       "format": "{name} ({cores-logical}) @ {freq-max}",
       "temp": true
     },
     {
       "type": "gpu",
-      "key": "│ 󰍹  gpu     ",
+      "key": "│   gpu     ",
       "keyColor": "38;2;186;200;219",
       "format": "{name}",
       "temp": true
     },
     {
       "type": "memory",
-      "key": "│ 󰍛  memory  ",
+      "key": "│   memory  ",
       "keyColor": "38;2;186;200;219"
     },
     {
       "type": "swap",
-      "key": "│ 󰓦  swap    ",
+      "key": "│   swap    ",
       "keyColor": "38;2;186;200;219"
     },
     {
       "type": "disk",
-      "key": "│ 󰋊  disk    ",
+      "key": "│   disk    ",
       "keyColor": "38;2;186;200;219",
       "folders": "/"
     },
@@ -172,25 +172,25 @@
     },
     {
       "type": "custom",
-      "format": "╭─ 󰌘  status ──────────────────────",
+      "format": "╭─   status ──────────────────────",
       "outputColor": "38;2;159;202;252"
     },
     {
       "type": "localip",
-      "key": "│ 󰌘  local ip",
+      "key": "│   local ip",
       "keyColor": "38;2;159;202;252",
       "showIpv4": true,
       "compact": true
     },
     {
       "type": "media",
-      "key": "│ 󰝚  playing ",
+      "key": "│   playing ",
       "keyColor": "38;2;159;202;252",
       "format": "{artist} — {title}"
     },
     {
       "type": "datetime",
-      "key": "│ 󰥔  time    ",
+      "key": "│   time    ",
       "keyColor": "38;2;159;202;252",
       "format": "{14}:{17} · {11}.{3}.{1}"
     },

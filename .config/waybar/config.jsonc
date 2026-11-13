@@ -8,111 +8,18 @@
     "reload_style_on_change": true,
     "modules-left": [
       "cpu",
-      "power-profiles-daemon",
-      "temperature",
-      "memory",
-      "disk"
+      "memory"
     ],
     "modules-center": [
       "group/media",
-      "idle_inhibitor",
-      "clock",
-      "custom/vpn"
+      "clock"
     ],
-    "modules-right": [
-      "custom/weather",
-      "custom/picker",
-      "custom/clip",
-      "custom/updates",
-      "custom/nightlight",
-      "custom/record"
-    ],
-    "cpu": {
-      "interval": 2,
-      "format": "{usage}% 󰻠"
-    },
-    "power-profiles-daemon": {
-      "format": "{icon}",
-      "tooltip-format": "Профиль: {profile}",
-      "format-icons": {
-        "performance": "󰉁",
-        "balanced": "󰗑",
-        "power-saver": "󰌪",
-        "default": "󰉁"
-      }
-    },
-    "temperature": {
-      "interval": 3,
-      "hwmon-path-abs": "/sys/devices/pci0000:00/0000:00:18.3/hwmon",
-      "input-filename": "temp1_input",
-      "critical-threshold": 85,
-      "format": "{temperatureC}°C 󰈸"
-    },
-    "memory": {
-      "interval": 3,
-      "format": "{used:0.2f}G 󰍛",
-      "on-click": "kitty -e btop"
-    },
-    "disk": {
-      "interval": 60,
-      "path": "/",
-      "format": "{percentage_used}% 󰋊"
-    },
-    "idle_inhibitor": {
-      "format": "{icon}",
-      "format-icons": {
-        "activated": "󰈈",
-        "deactivated": "󰈉"
-      },
-      "tooltip-format-activated": "Сон заблокирован",
-      "tooltip-format-deactivated": "Сон разрешён"
-    },
+    "modules-right": [],
     "clock": {
       "interval": 1,
-      "format": "󰥔 {:%H:%M:%S}",
-      "format-alt": "󰃭 {:%a %d %b}",
+      "format": " {:%H:%M:%S}",
+      "format-alt": " {:%a %d %b}",
       "tooltip-format": "<tt>{calendar}</tt>"
-    },
-    "custom/vpn": {
-      "exec": "~/.local/bin/rice-vpn",
-      "return-type": "json",
-      "interval": 5
-    },
-    "custom/weather": {
-      "exec": "~/.local/bin/rice-weather",
-      "return-type": "json",
-      "interval": 1800
-    },
-    "custom/picker": {
-      "format": "󰈊",
-      "tooltip-format": "Пипетка",
-      "on-click": "hyprpicker -a"
-    },
-    "custom/clip": {
-      "format": "󰅇",
-      "tooltip-format": "Буфер обмена",
-      "on-click": "~/.local/bin/rice-clip"
-    },
-    "custom/updates": {
-      "exec": "n=$(checkupdates 2>/dev/null | wc -l); echo $n",
-      "interval": 3600,
-      "format": "󰏗 {}",
-      "tooltip-format": "Обновления: {}",
-      "on-click": "kitty -e sudo pacman -Syu"
-    },
-    "custom/nightlight": {
-      "exec": "~/.local/bin/rice-nightlight status",
-      "return-type": "json",
-      "interval": "once",
-      "signal": 9,
-      "on-click": "~/.local/bin/rice-nightlight"
-    },
-    "custom/record": {
-      "exec": "~/.local/bin/rice-record status",
-      "return-type": "json",
-      "interval": "once",
-      "signal": 10,
-      "on-click": "~/.local/bin/rice-record"
     },
     "group/media": {
       "orientation": "horizontal",
@@ -123,7 +30,7 @@
       ]
     },
     "custom/mprev": {
-      "exec": "playerctl -p '%any,!firefox' status >/dev/null 2>&1 && echo '󰒮' || echo ''",
+      "exec": "playerctl -p '%any,!firefox' status >/dev/null 2>&1 && echo '' || echo ''",
       "interval": 2,
       "format": "{}",
       "tooltip": false,
@@ -131,7 +38,7 @@
       "hide-empty-text": true
     },
     "custom/mnext": {
-      "exec": "playerctl -p '%any,!firefox' status >/dev/null 2>&1 && echo '󰒭' || echo ''",
+      "exec": "playerctl -p '%any,!firefox' status >/dev/null 2>&1 && echo '' || echo ''",
       "interval": 2,
       "format": "{}",
       "tooltip": false,
@@ -149,6 +56,15 @@
       "on-click-middle": "playerctl -p '%any,!firefox' previous",
       "on-scroll-up": "playerctl -p '%any,!firefox' volume 0.05+",
       "on-scroll-down": "playerctl -p '%any,!firefox' volume 0.05-"
+    },
+    "cpu": {
+      "interval": 2,
+      "format": "{usage}% "
+    },
+    "memory": {
+      "interval": 3,
+      "format": "{used:0.2f}G ",
+      "on-click": "kitty -e btop"
     }
   },
   {
@@ -166,17 +82,26 @@
       "group/ws"
     ],
     "modules-right": [
-      "tray",
       "custom/notify",
       "network",
-      "bluetooth",
       "hyprland/language",
       "wireplumber",
       "wireplumber#mic",
       "custom/power"
     ],
+    "custom/phone": {
+      "exec": "~/.local/bin/rice-phone",
+      "return-type": "json",
+      "interval": 5,
+      "signal": 11,
+      "hide-empty-text": true,
+      "on-click": "~/.local/bin/rice-phone send",
+      "on-click-right": "~/.local/bin/rice-phone browse",
+      "on-click-middle": "~/.local/bin/rice-phone ring",
+      "on-scroll-up": "~/.local/bin/rice-phone app"
+    },
     "custom/launcher": {
-      "format": "󰖌",
+      "format": "",
       "tooltip-format": "Приложения",
       "on-click": "pkill -x wofi || wofi --show drun"
     },
@@ -256,40 +181,40 @@
       "return-type": "json",
       "format": "{text} {icon}",
       "format-icons": {
-        "notification": "󰂚",
-        "none": "󰂜",
-        "dnd-notification": "󰂛",
-        "dnd-none": "󰂛",
-        "inhibited-notification": "󰂚",
-        "inhibited-none": "󰂜",
-        "dnd-inhibited-notification": "󰂛",
-        "dnd-inhibited-none": "󰂛"
+        "notification": "",
+        "none": "",
+        "dnd-notification": "",
+        "dnd-none": "",
+        "inhibited-notification": "",
+        "inhibited-none": "",
+        "dnd-inhibited-notification": "",
+        "dnd-inhibited-none": ""
       },
       "on-click": "swaync-client -t -sw",
       "on-click-right": "swaync-client -d -sw",
       "escape": true
     },
     "hyprland/language": {
-      "format": "󰌌 {}",
+      "format": " {}",
       "format-en": "EN",
       "format-ru": "RU"
     },
     "wireplumber": {
-      "format": "󰕾 {volume}%",
-      "format-muted": "󰝟 mute",
+      "format": " {volume}%",
+      "format-muted": " mute",
       "on-click": "pavucontrol",
       "on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
       "scroll-step": 5
     },
     "wireplumber#mic": {
       "node-type": "Audio/Source",
-      "format": "󰍬 {volume}%",
-      "format-muted": "󰍭 mute",
+      "format": " {volume}%",
+      "format-muted": " mute",
       "on-click": "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle",
       "scroll-step": 5
     },
     "custom/power": {
-      "format": "󰐥",
+      "format": "",
       "tooltip-format": "Питание",
       "on-click": "~/.local/bin/rice-power"
     },
@@ -421,15 +346,15 @@
     "network": {
       "interval": 3,
       "format-wifi": "{icon} {signalStrength}%",
-      "format-ethernet": "󰈀 eth",
-      "format-disconnected": "󰤮 off",
-      "format-disabled": "󰤮 off",
+      "format-ethernet": " eth",
+      "format-disconnected": " off",
+      "format-disabled": " off",
       "format-icons": [
-        "󰤯",
-        "󰤟",
-        "󰤢",
-        "󰤥",
-        "󰤨"
+        "",
+        "",
+        "",
+        "",
+        ""
       ],
       "tooltip-format-wifi": "{essid}\n{ipaddr} · {frequency} GHz\n⇣ {bandwidthDownBytes}  ⇡ {bandwidthUpBytes}",
       "tooltip-format-disconnected": "Нет подключения",
@@ -437,12 +362,12 @@
       "on-click-right": "kitty -e nmtui"
     },
     "bluetooth": {
-      "format": "󰂯",
-      "format-disabled": "󰂲",
-      "format-off": "󰂲",
+      "format": "",
+      "format-disabled": "",
+      "format-off": "",
       "format-no-controller": "",
-      "format-connected": "󰂱 {num_connections}",
-      "format-connected-battery": "󰂱 {device_battery_percentage}%",
+      "format-connected": " {num_connections}",
+      "format-connected-battery": " {device_battery_percentage}%",
       "tooltip-format": "{controller_alias}\n{num_connections} подключено",
       "tooltip-format-connected": "{controller_alias}\n{device_enumerate}",
       "tooltip-format-enumerate-connected": "{device_alias}",

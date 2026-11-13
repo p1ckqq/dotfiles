@@ -27,11 +27,11 @@ def split_t(line):
     out.append(cur)
     return out
 
-BARS = ["\U000F092F", "\U000F091F", "\U000F0922", "\U000F0925", "\U000F0928"]
+BARS = ["\U0000F1EB", "\U0000F1EB", "\U0000F1EB", "\U0000F1EB", "\U0000F1EB"]
 
 def main():
     if run("nmcli", "radio", "wifi").stdout.strip() != "enabled":
-        ch = wofi(["\U000F05A9  Включить Wi-Fi", "\U000F0C3C  Открыть nmtui"], "Wi-Fi выключен")
+        ch = wofi(["\U0000F1EB  Включить Wi-Fi", "\U0000F013  Открыть nmtui"], "Wi-Fi выключен")
         if ch and "Включить" in ch:
             run("nmcli", "radio", "wifi", "on"); notify("Wi-Fi включён")
         elif ch and "nmtui" in ch:
@@ -56,13 +56,13 @@ def main():
     rows, keymap = [], {}
     for ssid, n in sorted(nets.items(), key=lambda kv: (not kv[1]["on"], -kv[1]["sig"])):
         icon = BARS[min(4, n["sig"] // 20)]
-        lock = "\U000F033E" if n["sec"] and n["sec"] != "--" else " "
-        mark = "  \U000F012C подключено" if n["on"] else ("  · сохранена" if ssid in known else "")
+        lock = "\U0000F023" if n["sec"] and n["sec"] != "--" else " "
+        mark = "  \U0000F00C подключено" if n["on"] else ("  · сохранена" if ssid in known else "")
         row = f"{icon}  {lock}  {ssid}   {n['sig']}%{mark}"
         rows.append(row); keymap[row] = ssid
 
-    actions = ["\U000F0450  Обновить список", "\U000F0D5B  Отключиться", "\U000F092E  Выключить Wi-Fi",
-               "\U000F0C3C  Расширенные настройки (nmtui)"]
+    actions = ["\U0000F021  Обновить список", "\U0000F127  Отключиться", "\U0000F05E  Выключить Wi-Fi",
+               "\U0000F013  Расширенные настройки (nmtui)"]
     ch = wofi(rows + actions, "Wi-Fi", lines=len(rows) + len(actions))
     if not ch:
         return

@@ -159,6 +159,9 @@ hl.bind(mainMod .. " + P",      hl.dsp.window.pseudo())
 hl.bind(mainMod .. " + J",      hl.dsp.layout("togglesplit"))
 hl.bind(mainMod .. " + F",      hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }))
 hl.bind(mainMod .. " + N",      hl.dsp.exec_cmd("swaync-client -t -sw"))
+hl.bind(mainMod .. " + SHIFT + V", hl.dsp.exec_cmd(HOME .. "/.local/bin/rice-clip"))     -- история буфера обмена
+hl.bind(mainMod .. " + SHIFT + C", hl.dsp.exec_cmd("hyprpicker -a"))                      -- пипетка (цвет в буфер)
+hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd(HOME .. "/.local/bin/rice-record"))    -- запись экрана вкл/выкл
 hl.bind(mainMod .. " + L",      hl.dsp.exec_cmd("hyprlock"))
 hl.bind(mainMod .. " + B",      hl.dsp.exec_cmd("firefox"))
 

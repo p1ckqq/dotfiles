@@ -6,7 +6,7 @@ import json, subprocess, sys, time
 IGNORE = "%any,!firefox"
 SEP = "\x1f"
 FMT = SEP.join(["{{status}}", "{{title}}", "{{artist}}", "{{album}}", "{{playerName}}"])
-ICONS = {"Playing": "\U000F075A", "Paused": "\U000F03E4", "Stopped": "\U000F04DB"}
+ICONS = {"Playing": "\U0000F001", "Paused": "\U0000F04C", "Stopped": "\U0000F04D"}
 MAXLEN = 38
 
 

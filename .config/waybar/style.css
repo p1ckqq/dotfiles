@@ -104,7 +104,7 @@ tooltip {
 }
 
 /* справа */
-.bottom #tray, .bottom #custom-notify, .bottom #language, .bottom #network, .bottom #bluetooth,
+.bottom #tray, .bottom #custom-notify, .bottom #custom-phone, .bottom #language, .bottom #network, .bottom #bluetooth,
 .bottom #wireplumber, .bottom #custom-power {
   background: alpha(@surface_container_high, 0.9);
   color: @primary;
@@ -148,3 +148,11 @@ tooltip {
 .bottom #network.disconnected, .bottom #network.disabled,
 .bottom #bluetooth.off, .bottom #bluetooth.disabled { color: alpha(@on_surface, 0.4); }
 .bottom #bluetooth.connected { color: @tertiary; }
+
+/* ===== телефон (KDE Connect) ===== */
+.bottom #custom-phone.off { color: alpha(@on_surface, 0.4); }
+.bottom #custom-phone.on { color: @tertiary; }
+.bottom #custom-phone.charging { color: #8fd18f; }
+.bottom #custom-phone.low { color: @error; }
+.bottom #custom-phone:hover { background: @primary_fixed; color: @on_primary_fixed; }
+

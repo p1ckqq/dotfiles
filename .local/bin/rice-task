@@ -13,19 +13,19 @@ import json, os, socket, subprocess, sys
 MIN_WS = "special:minimized"
 SKIP_CLASSES = {"widget", "lofi-widget"}
 ICONS = {
-    "firefox": "\U000F0239", "kitty": "\U000F018D", "org.telegram.desktop": "",
-    "telegramdesktop": "", "com.obsproject.studio": "\U000F0D5C",
-    "org.kde.dolphin": "\U000F024B", "chromium": "\U000F02AF", "google-chrome": "\U000F02AF",
-    "code": "\U000F0A1E", "discord": "\U000F066F", "vesktop": "\U000F066F", "steam": "\U000F04D3",
-    "spotify": "\U000F04C7", "yandexmusic": "\U000F075A", "obsidian": "\U000F0B9B", "mpv": "\U000F0381",
-    "org.pulseaudio.pavucontrol": "\U000F057E", "happ": "\U000F0582",
+    "firefox": "\U0000F269", "kitty": "\U0000F120", "org.telegram.desktop": "",
+    "telegramdesktop": "", "com.obsproject.studio": "\U0000F03D",
+    "org.kde.dolphin": "\U0000F07B", "chromium": "\U0000F268", "google-chrome": "\U0000F268",
+    "code": "\U0000F121", "discord": "\U0000F086", "vesktop": "\U0000F086", "steam": "\U0000F1B6",
+    "spotify": "\U0000F1BC", "yandexmusic": "\U0000F001", "obsidian": "\U0000F0F6", "mpv": "\U0000F008",
+    "org.pulseaudio.pavucontrol": "\U0000F028", "happ": "\U0000F132",
 }
 NAMES = {
     "kitty": "Terminal", "firefox": "Firefox", "org.telegram.desktop": "Telegram",
     "com.obsproject.studio": "OBS Studio", "org.kde.dolphin": "Files", "yandexmusic": "Yandex Music",
     "org.pulseaudio.pavucontrol": "Volume",
 }
-DEFAULT_ICON = "\U000F08C6"
+DEFAULT_ICON = "\U0000F2D0"
 
 
 def hj(cmd):
