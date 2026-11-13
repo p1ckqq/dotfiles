@@ -21,7 +21,7 @@ STASH = "special:lofi"
 KEEP_CLASSES = {"widget", "lofi-widget"}           # не прячем (Яндекс Музыка прячется, но не морозится)
 NO_FREEZE = {  # имена процессов (comm), которые никогда не замораживаем
     "kitty", "fish", "bash", "zsh", "Happ", "happd", "xray", "easyeffects", "yandexmusic",
-    "Hyprland", "waybar", "swaync", "mpvpaper", "awww-daemon", "pipewire", "pipewire-pulse",
+    "Hyprland", "waybar", "qs", "mpvpaper", "awww-daemon", "pipewire", "pipewire-pulse",
     "wireplumber", "hyprpolkitagent", "xdg-desktop-por", "nfqws", "claude", "node",
 }
 

@@ -35,7 +35,7 @@ tooltip {
   border-radius: 12px;
 }
 .top #cpu { margin-left: 8px; }
-.top #custom-record { margin-right: 8px; }
+.top #custom-record, .top #custom-clip { margin-right: 8px; }
 
 .top #custom-picker, .top #custom-clip, .top #custom-wall,
 .top #custom-nightlight, .top #custom-record, .top #power-profiles-daemon,

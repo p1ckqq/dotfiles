@@ -14,7 +14,9 @@
       "group/media",
       "clock"
     ],
-    "modules-right": [],
+    "modules-right": [
+      "custom/clip"
+    ],
     "clock": {
       "interval": 1,
       "format": " {:%H:%M:%S}",
@@ -56,6 +58,11 @@
       "on-click-middle": "playerctl -p '%any,!firefox' previous",
       "on-scroll-up": "playerctl -p '%any,!firefox' volume 0.05+",
       "on-scroll-down": "playerctl -p '%any,!firefox' volume 0.05-"
+    },
+    "custom/clip": {
+      "format": "",
+      "tooltip-format": "Буфер обмена",
+      "on-click": "~/.local/bin/rice-clip"
     },
     "cpu": {
       "interval": 2,
@@ -177,7 +184,7 @@
       "spacing": 8
     },
     "custom/notify": {
-      "exec": "swaync-client -swb",
+      "exec": "tail -n1 -F $HOME/.cache/rice/notify.json",
       "return-type": "json",
       "format": "{text} {icon}",
       "format-icons": {
@@ -190,8 +197,8 @@
         "dnd-inhibited-notification": "",
         "dnd-inhibited-none": ""
       },
-      "on-click": "swaync-client -t -sw",
-      "on-click-right": "swaync-client -d -sw",
+      "on-click": "qs -p $HOME/.config/rice/notifcenter ipc call center toggle",
+      "on-click-right": "qs -p $HOME/.config/rice/notifcenter ipc call center dnd",
       "escape": true
     },
     "hyprland/language": {

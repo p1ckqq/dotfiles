@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# rice-qs — быстрые кнопки центра уведомлений (swaync).
-# Проверки печатают true/false, без хитрых кавычек (swaync их плохо разбирает).
+# rice-qs — быстрые кнопки центра уведомлений (qs notifcenter).
+# Проверки печатают true/false, без хитрых кавычек (qs notifcenter).
 case "$1" in
   wifi-status)  [ "$(nmcli radio wifi)" = enabled ] && echo true || echo false ;;
   wifi-toggle)  [ "$(nmcli radio wifi)" = enabled ] && nmcli radio wifi off || nmcli radio wifi on ;;
